@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block titulo %}{{ 'Editar' if edicao else 'Novo' }} Aluno - Academia VIP{% endblock %}
+
+{% block conteudo %}
+<h2 class="mb-4">
+    <i class="bi bi-person-{{ 'pencil' if edicao else 'plus' }}-fill"></i>
+    {{ 'Editar' if edicao else 'Novo' }} Aluno
+</h2>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Nome *</label>
+                    <input type="text" name="nome" class="form-control" value="{{ aluno.nome if aluno else '' }}" required placeholder="Nome completo">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">CPF *</label>
+                    <input type="text" name="cpf" class="form-control" value="{{ aluno.cpf if aluno else '' }}" 
+                           required {{ 'readonly' if edicao else '' }} placeholder="000.000.000-00">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Telefone *</label>
+                    <input type="text" name="telefone" class="form-control" value="{{ aluno.telefone if aluno else '' }}" required placeholder="(00) 00000-0000">
+                </div>
+                {% if not edicao %}
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Plano *</label>
+                    <select name="plano_id" class="form-select" required>
+                        <option value="">Selecione um plano</option>
+                        {% for plano in planos %}
+                        <option value="{{ plano.id }}">{{ plano.nome }} - R$ {{ "%.2f"|format(plano.valor) }} ({{ plano.duracao_meses }} {{ 'mes' if plano.duracao_meses == 1 else 'meses' }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+            </div>
+            {% if not edicao %}
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Data de Inicio *</label>
+                    <input type="date" name="data_inicio" class="form-control" value="{{ hoje }}" required>
+                </div>
+            </div>
+            {% endif %}
+            {% if edicao %}
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">E-mail</label>
+                    <input type="email" name="email" class="form-control" value="{{ aluno.email if aluno and aluno.email else '' }}" placeholder="email@exemplo.com">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Data de Nascimento</label>
+                    <input type="date" name="data_nascimento" class="form-control"
+                           value="{{ aluno.data_nascimento.isoformat() if aluno and aluno.data_nascimento else '' }}">
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Status</label>
+                <div class="form-check form-switch mt-2">
+                    <input class="form-check-input" type="checkbox" name="ativo" id="ativo" {{ 'checked' if aluno.ativo else '' }}>
+                    <label class="form-check-label" for="ativo" style="color: var(--vip-text-muted);">Ativo</label>
+                </div>
+            </div>
+            {% endif %}
+            <div class="d-flex gap-2 mt-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg"></i> {{ 'Salvar' if edicao else 'Cadastrar e Matricular' }}
+                </button>
+                <a href="{{ url_for('alunos.listar') }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

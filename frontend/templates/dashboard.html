@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block titulo %}Dashboard - Academia VIP{% endblock %}
+
+{% block conteudo %}
+<h2 class="mb-4"><i class="bi bi-speedometer2"></i> Dashboard</h2>
+
+<div class="row g-4">
+    <div class="col-md-3">
+        <div class="stat-card gold">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-value">{{ total_alunos }}</div>
+                    <div class="stat-label">Alunos Ativos</div>
+                </div>
+                <div class="stat-icon">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card success">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-value">{{ matriculas_ativas }}</div>
+                    <div class="stat-label">Matriculas Ativas</div>
+                </div>
+                <div class="stat-icon">
+                    <i class="bi bi-clipboard-check"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card warning">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-value">{{ mensalidades_pendentes }}</div>
+                    <div class="stat-label">Pendentes</div>
+                </div>
+                <div class="stat-icon">
+                    <i class="bi bi-clock-history"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card danger">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-value">{{ mensalidades_atrasadas }}</div>
+                    <div class="stat-label">Em Atraso</div>
+                </div>
+                <div class="stat-icon">
+                    <i class="bi bi-exclamation-triangle"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4 g-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title mb-3"><i class="bi bi-lightning-fill"></i> Acesso Rapido</h5>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <a href="{{ url_for('alunos.novo') }}" class="quick-card gold">
+                            <div class="quick-icon"><i class="bi bi-person-plus-fill"></i></div>
+                            <h6>Novo Aluno</h6>
+                            <p>Cadastrar aluno e matricular no sistema</p>
+                        </a>
+                    </div>
+                    <div class="col-12">
+                        <a href="{{ url_for('mensalidades.listar') }}" class="quick-card warning">
+                            <div class="quick-icon"><i class="bi bi-cash-coin"></i></div>
+                            <h6>Ver Mensalidades</h6>
+                            <p>Gerenciar pagamentos</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title mb-3"><i class="bi bi-bar-chart-fill"></i> Relatorios</h5>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <a href="{{ url_for('relatorios.index') }}" class="quick-card info">
+                            <div class="quick-icon"><i class="bi bi-file-earmark-bar-graph"></i></div>
+                            <h6>Relatorio Geral</h6>
+                            <p>Faturamento, inadimplencia e estimativas</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

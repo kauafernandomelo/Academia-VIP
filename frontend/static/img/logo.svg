@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#D4AF37;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#F5D77A;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#D4AF37;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="darkGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0f0f1a;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="100" cy="100" r="95" fill="url(#darkGrad)" stroke="url(#goldGrad)" stroke-width="3"/>
+
+  <!-- Inner ring -->
+  <circle cx="100" cy="100" r="80" fill="none" stroke="url(#goldGrad)" stroke-width="1" opacity="0.4"/>
+
+  <!-- Dumbbell -->
+  <g transform="translate(100,85)" filter="url(#glow)">
+    <!-- Left weight plate (outer) -->
+    <rect x="-60" y="-22" width="14" height="44" rx="4" fill="url(#goldGrad)"/>
+    <!-- Left weight plate (inner) -->
+    <rect x="-48" y="-16" width="10" height="32" rx="3" fill="url(#goldGrad)" opacity="0.85"/>
+    <!-- Bar left -->
+    <rect x="-40" y="-5" width="80" height="10" rx="5" fill="url(#goldGrad)"/>
+    <!-- Right weight plate (inner) -->
+    <rect x="38" y="-16" width="10" height="32" rx="3" fill="url(#goldGrad)" opacity="0.85"/>
+    <!-- Right weight plate (outer) -->
+    <rect x="46" y="-22" width="14" height="44" rx="4" fill="url(#goldGrad)"/>
+    <!-- Center grip texture -->
+    <rect x="-8" y="-7" width="16" height="14" rx="3" fill="url(#darkGrad)" stroke="url(#goldGrad)" stroke-width="1"/>
+  </g>
+
+  <!-- Crown above dumbbell -->
+  <g transform="translate(100,48)" filter="url(#glow)">
+    <polygon points="0,-18 -12,-6 -8,-6 -8,2 8,2 8,-6 12,-6" fill="url(#goldGrad)"/>
+    <circle cx="-8" cy="4" r="2" fill="url(#goldGrad)"/>
+    <circle cx="0" cy="4" r="2" fill="url(#goldGrad)"/>
+    <circle cx="8" cy="4" r="2" fill="url(#goldGrad)"/>
+  </g>
+
+  <!-- Text: ACADEMIA -->
+  <text x="100" y="142" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-size="18" font-weight="900" fill="url(#goldGrad)" letter-spacing="4">ACADEMIA</text>
+
+  <!-- Text: VIP -->
+  <text x="100" y="168" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-size="26" font-weight="900" fill="url(#goldGrad)" letter-spacing="8" filter="url(#glow)">VIP</text>
+
+  <!-- Decorative lines -->
+  <line x1="30" y1="178" x2="170" y2="178" stroke="url(#goldGrad)" stroke-width="1" opacity="0.5"/>
+  <line x1="45" y1="183" x2="155" y2="183" stroke="url(#goldGrad)" stroke-width="0.5" opacity="0.3"/>
+</svg>

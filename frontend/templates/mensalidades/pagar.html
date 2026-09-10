@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block titulo %}Registrar Pagamento - Academia VIP{% endblock %}
+
+{% block conteudo %}
+<h2 class="mb-4">
+    <i class="bi bi-cash"></i> Registrar Pagamento
+</h2>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header"><i class="bi bi-receipt"></i> <strong>Dados da Mensalidade</strong></div>
+            <div class="card-body">
+                <p><strong>Aluno:</strong> {{ mensalidade.matricula.aluno.nome }}</p>
+                <p><strong>Plano:</strong> {{ mensalidade.matricula.plano.nome }}</p>
+                <p><strong>Valor:</strong> R$ {{ "%.2f"|format(mensalidade.valor) }}</p>
+                <p><strong>Vencimento:</strong> {{ mensalidade.data_vencimento.strftime('%d/%m/%Y') }}</p>
+                {% if mensalidade.esta_atrasada %}
+                <p><span class="badge bg-danger">Em atraso</span></p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><i class="bi bi-credit-card"></i> <strong>Pagamento</strong></div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">Valor Pago (R$) *</label>
+                        <input type="number" name="valor_pago" class="form-control" step="0.01" min="0"
+                               value="{{ mensalidade.valor }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Forma de Pagamento *</label>
+                        <select name="forma_pagamento" class="form-select" required>
+                            <option value="">Selecione...</option>
+                            <option value="dinheiro">Dinheiro</option>
+                            <option value="pix">PIX</option>
+                            <option value="cartao_credito">Cartao de Credito</option>
+                            <option value="cartao_debito">Cartao de Debito</option>
+                            <option value="boleto">Boleto</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Observacao</label>
+                        <textarea name="observacao" class="form-control" rows="2" placeholder="Observacoes sobre o pagamento..."></textarea>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-lg"></i> Confirmar Pagamento
+                        </button>
+                        <a href="{{ url_for('mensalidades.listar') }}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Voltar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

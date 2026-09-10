@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block titulo %}{{ 'Editar' if edicao else 'Novo' }} Plano - Academia VIP{% endblock %}
+
+{% block conteudo %}
+<h2 class="mb-4">
+    <i class="bi bi-card-{{ 'edit' if edicao else 'plus' }}-fill"></i>
+    {{ 'Editar' if edicao else 'Novo' }} Plano
+</h2>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Nome *</label>
+                    <input type="text" name="nome" class="form-control" value="{{ plano.nome if plano else '' }}" required placeholder="Nome do plano">
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Valor (R$) *</label>
+                    <input type="number" name="valor" class="form-control" step="0.01" min="0"
+                           value="{{ plano.valor if plano else '' }}" required placeholder="0.00">
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Duracao (meses) *</label>
+                    <input type="number" name="duracao_meses" class="form-control" min="1"
+                           value="{{ plano.duracao_meses if plano else '' }}" required placeholder="1">
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Descricao</label>
+                <textarea name="descricao" class="form-control" rows="3" placeholder="Descreva os beneficios do plano...">{{ plano.descricao if plano and plano.descricao else '' }}</textarea>
+            </div>
+            {% if edicao %}
+            <div class="mb-3">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" name="ativo" id="ativo" {{ 'checked' if plano.ativo else '' }}>
+                    <label class="form-check-label" for="ativo" style="color: var(--vip-text-muted);">Ativo</label>
+                </div>
+            </div>
+            {% endif %}
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg"></i> {{ 'Salvar' if edicao else 'Criar' }}
+                </button>
+                <a href="{{ url_for('planos.listar') }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

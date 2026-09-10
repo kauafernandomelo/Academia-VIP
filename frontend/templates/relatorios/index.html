@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block titulo %}Relatorio Geral - Academia VIP{% endblock %}
+
+{% block conteudo %}
+<h2 class="mb-4"><i class="bi bi-file-earmark-bar-graph"></i> Relatorio Geral - {{ meses[mes_atual] }}/{{ ano_atual }}</h2>
+
+<!-- FATURAMENTO DO MES -->
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="stat-card gold">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-value">R$ {{ "%.2f"|format(total_faturamento) }}</div>
+                    <div class="stat-label">Faturamento do Mes</div>
+                </div>
+                <div class="stat-icon"><i class="bi bi-cash-stack"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card danger">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-value">R$ {{ "%.2f"|format(total_inadimplencia) }}</div>
+                    <div class="stat-label">Inadimplencia</div>
+                </div>
+                <div class="stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card success">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-value">R$ {{ "%.2f"|format(total_estimativa) }}</div>
+                    <div class="stat-label">Estimativa {{ meses[proximo_mes.month] }}</div>
+                </div>
+                <div class="stat-icon"><i class="bi bi-graph-up-arrow"></i></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- TABELA: FATURAMENTO DO MES -->
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="bi bi-check-circle-fill text-success"></i> <strong>Faturamento do Mes - {{ meses[mes_atual] }}</strong>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>Data Pagamento</th>
+                    <th>Aluno</th>
+                    <th>Plano</th>
+                    <th>Valor</th>
+                    <th>Forma</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in pagamentos_mes %}
+                <tr>
+                    <td>{{ p.data_pagamento.strftime('%d/%m/%Y') }}</td>
+                    <td><strong>{{ p.mensalidade.matricula.aluno.nome }}</strong></td>
+                    <td>{{ p.mensalidade.matricula.plano.nome }}</td>
+                    <td>R$ {{ "%.2f"|format(p.valor_pago) }}</td>
+                    <td>{{ p.forma_pagamento.replace('_', ' ').title() }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center py-4" style="color: var(--vip-text-muted);">
+                        <i class="bi bi-inbox display-4 d-block mb-2"></i>
+                        Nenhum pagamento registrado neste mes.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- TABELA: INADIMPLENCIA -->
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="bi bi-exclamation-circle-fill text-danger"></i> <strong>Inadimplencia - Mensalidades em Atraso</strong>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>Aluno</th>
+                    <th>Plano</th>
+                    <th>Valor</th>
+                    <th>Vencimento</th>
+                    <th>Dias em Atraso</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in mensalidades_atrasadas %}
+                <tr>
+                    <td><strong>{{ m.matricula.aluno.nome }}</strong></td>
+                    <td>{{ m.matricula.plano.nome }}</td>
+                    <td>R$ {{ "%.2f"|format(m.valor) }}</td>
+                    <td>{{ m.data_vencimento.strftime('%d/%m/%Y') }}</td>
+                    <td>
+                        {% set dias = (hoje - m.data_vencimento).days %}
+                        <span class="badge bg-danger">{{ dias }} {{ 'dia' if dias == 1 else 'dias' }}</span>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center py-4" style="color: var(--vip-text-muted);">
+                        <i class="bi bi-check-circle display-4 d-block mb-2 text-success"></i>
+                        Nenhuma mensalidade em atraso. Parabens!
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- TABELA: ESTIMATIVA PROXIMO MES -->
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="bi bi-calendar-event"></i> <strong>Estimativa - {{ meses[proximo_mes.month] }}/{{ proximo_mes.year }}</strong>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>Aluno</th>
+                    <th>Plano</th>
+                    <th>Valor</th>
+                    <th>Vencimento</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in mensalidades_proximo_mes %}
+                <tr>
+                    <td><strong>{{ m.matricula.aluno.nome }}</strong></td>
+                    <td>{{ m.matricula.plano.nome }}</td>
+                    <td>R$ {{ "%.2f"|format(m.valor) }}</td>
+                    <td>{{ m.data_vencimento.strftime('%d/%m/%Y') }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" class="text-center py-4" style="color: var(--vip-text-muted);">
+                        <i class="bi bi-inbox display-4 d-block mb-2"></i>
+                        Nenhuma mensalidade pendente para o proximo mes.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- TABELA: ALUNOS COM AVISO (7 DIAS) -->
+{% if mensalidades_aviso %}
+<div class="card mb-4 border-warning">
+    <div class="card-header bg-warning text-dark">
+        <i class="bi bi-bell-fill"></i> <strong>Alunos com Aviso - Faltam 7 dias ou menos</strong>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>Aluno</th>
+                    <th>Plano</th>
+                    <th>Valor</th>
+                    <th>Vencimento</th>
+                    <th>Faltam</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in mensalidades_aviso %}
+                <tr>
+                    <td><strong>{{ m.matricula.aluno.nome }}</strong></td>
+                    <td>{{ m.matricula.plano.nome }}</td>
+                    <td>R$ {{ "%.2f"|format(m.valor) }}</td>
+                    <td>{{ m.data_vencimento.strftime('%d/%m/%Y') }}</td>
+                    <td>
+                        {% set dias = (m.data_vencimento - hoje).days %}
+                        <span class="badge bg-warning text-dark">{{ dias }} {{ 'dia' if dias == 1 else 'dias' }}</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
