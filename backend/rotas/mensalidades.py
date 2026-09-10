@@ -1,7 +1,7 @@
 from datetime import date
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required
-from models import db, Mensalidade, Pagamento
+from models import db, Mensalidade, Pagamento, Aluno
 
 mensalidades_bp = Blueprint("mensalidades", __name__)
 
@@ -11,18 +11,22 @@ mensalidades_bp = Blueprint("mensalidades", __name__)
 def listar():
     page = request.args.get("page", 1, type=int)
     status = request.args.get("status", "todas")
+    q = request.args.get("q", "").strip()
 
-    query = Mensalidade.query
+    query = Mensalidade.query.join(Mensalidade.matricula).join(Aluno)
+
     if status == "pendentes":
-        query = query.filter_by(paga=False).filter(
-            Mensalidade.data_vencimento >= date.today()
-        )
+        query = query.filter(Mensalidade.paga == False, Mensalidade.data_vencimento >= date.today())
     elif status == "atrasadas":
-        query = query.filter_by(paga=False).filter(
-            Mensalidade.data_vencimento < date.today()
-        )
+        query = query.filter(Mensalidade.paga == False, Mensalidade.data_vencimento < date.today())
     elif status == "pagas":
-        query = query.filter_by(paga=True)
+        query = query.filter(Mensalidade.paga == True)
+
+    if q:
+        ql = q.lower()
+        query = query.filter(
+            (Aluno.nome.ilike(f"%{q}%")) | (Aluno.cpf.like(f"%{q}%"))
+        )
 
     pagination = query.order_by(Mensalidade.data_vencimento.desc()).paginate(
         page=page, per_page=15, error_out=False
@@ -33,6 +37,7 @@ def listar():
         mensalidades=pagination.items,
         pagination=pagination,
         status=status,
+        q=q,
     )
 
 

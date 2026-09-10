@@ -196,6 +196,7 @@ def perfis_append(perfil):
 @login_required
 def index():
     q = request.args.get("q", "").strip()
+    status_filtro = request.args.get("status", "todas")
 
     dados = _obterDadosRelatorios()
 
@@ -250,6 +251,7 @@ def index():
         "relatorios/index.html",
         meses=MESES,
         q=q,
+        status=status_filtro,
         fat=paginar(dados["pagamentos_mes"], page_fat),
         inad=paginar(dados["mensalidades_atrasadas"], page_inad),
         est=paginar(dados["estimativas"], page_est),
