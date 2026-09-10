@@ -60,6 +60,21 @@
                         <small style="color: var(--vip-text-muted);">
                             {{ mat.data_inicio.strftime('%d/%m/%Y') }} - {{ mat.data_fim.strftime('%d/%m/%Y') }}
                         </small>
+                        {% if mat.esta_vigente %}
+                        <div class="mt-2">
+                            {% if mat.dias_restantes is not none %}
+                                {% if mat.dias_restantes < 0 %}
+                                    <span class="badge bg-danger">Atrasado ha {{ mat.dias_restantes|abs }} dias</span>
+                                {% elif mat.dias_restantes == 0 %}
+                                    <span class="badge bg-warning text-dark">Vence hoje</span>
+                                {% elif mat.dias_restantes <= 7 %}
+                                    <span class="badge bg-warning text-dark">Vence em {{ mat.dias_restantes }} dias</span>
+                                {% else %}
+                                    <span class="badge bg-success">Vence em {{ mat.dias_restantes }} dias</span>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                        {% endif %}
                     </a>
                     {% endfor %}
                 </div>
@@ -67,11 +82,6 @@
                 <div class="text-center py-3" style="color: var(--vip-text-muted);">
                     <i class="bi bi-inbox display-4 d-block mb-2"></i>
                     Nenhuma matricula encontrada.
-                    <div class="mt-2">
-                        <a href="{{ url_for('matriculas.nova') }}" class="btn btn-success btn-sm">
-                            <i class="bi bi-clipboard-plus"></i> Nova Matricula
-                        </a>
-                    </div>
                 </div>
                 {% endif %}
             </div>

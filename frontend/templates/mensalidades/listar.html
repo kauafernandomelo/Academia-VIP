@@ -21,8 +21,10 @@
                 <tr>
                     <th>#</th>
                     <th>Aluno</th>
+                    <th>Plano</th>
                     <th>Valor</th>
                     <th>Vencimento</th>
+                    <th>Falta</th>
                     <th>Status</th>
                     <th>Acoes</th>
                 </tr>
@@ -32,8 +34,27 @@
                 <tr>
                     <td>{{ mensal.id }}</td>
                     <td><strong>{{ mensal.matricula.aluno.nome }}</strong></td>
+                    <td>{{ mensal.matricula.plano.nome }}</td>
                     <td>R$ {{ "%.2f"|format(mensal.valor) }}</td>
                     <td>{{ mensal.data_vencimento.strftime('%d/%m/%Y') }}</td>
+                    <td>
+                        {% if mensal.paga %}
+                            <span class="badge bg-success">Paga</span>
+                        {% else %}
+                            {% set dias = mensal.dias_restantes %}
+                            {% if dias is not none %}
+                                {% if dias < 0 %}
+                                    <span class="badge bg-danger">Atrasado ha {{ dias|abs }} dias</span>
+                                {% elif dias == 0 %}
+                                    <span class="badge bg-warning text-dark">Vence hoje</span>
+                                {% elif dias <= 7 %}
+                                    <span class="badge bg-warning text-dark">Falta {{ dias }} dias</span>
+                                {% else %}
+                                    <span class="badge bg-success">Falta {{ dias }} dias</span>
+                                {% endif %}
+                            {% endif %}
+                        {% endif %}
+                    </td>
                     <td>
                         {% if mensal.paga %}
                         <span class="badge bg-success">Paga</span>
@@ -53,7 +74,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="6" class="text-center py-4" style="color: var(--vip-text-muted);">
+                    <td colspan="8" class="text-center py-4" style="color: var(--vip-text-muted);">
                         <i class="bi bi-inbox display-4 d-block mb-2"></i>
                         Nenhuma mensalidade encontrada.
                     </td>

@@ -162,6 +162,13 @@ class Mensalidade(db.Model, TimestampMixin):
         return not self.paga and date.today() > self.data_vencimento
 
     @property
+    def dias_restantes(self):
+        if self.paga:
+            return None
+        delta = self.data_vencimento - date.today()
+        return delta.days
+
+    @property
     def status_display(self):
         if self.paga:
             return "Paga"

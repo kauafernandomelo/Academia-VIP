@@ -42,7 +42,7 @@ def pagar(id):
     mensalidade = Mensalidade.query.get_or_404(id)
 
     if mensalidade.paga:
-        flash("Esta mensalidade já foi paga.", "info")
+        flash("Esta mensalidade ja foi paga.", "info")
         return redirect(url_for("mensalidades.listar"))
 
     if request.method == "POST":
@@ -59,7 +59,30 @@ def pagar(id):
 
         db.session.add(pagamento)
         db.session.commit()
-        flash("Pagamento registrado com sucesso!", "success")
-        return redirect(url_for("mensalidades.listar"))
+
+        # Encontrar proxima mensalidade
+        proxima = Mensalidade.query.filter(
+            Mensalidade.matricula_id == mensalidade.matricula_id,
+            Mensalidade.paga == False,
+            Mensalidade.id != mensalidade.id,
+        ).order_by(Mensalidade.data_vencimento).first()
+
+        return redirect(url_for("mensalidades.sucesso", pagamento_id=pagamento.id, proxima_id=proxima.id if proxima else None))
 
     return render_template("mensalidades/pagar.html", mensalidade=mensalidade)
+
+
+@mensalidades_bp.route("/sucesso")
+@login_required
+def sucesso():
+    pagamento_id = request.args.get("pagamento_id", type=int)
+    proxima_id = request.args.get("proxima_id", type=int)
+
+    pagamento = Pagamento.query.get_or_404(pagamento_id)
+    proxima = Mensalidade.query.get(proxima_id) if proxima_id else None
+
+    return render_template(
+        "mensalidades/sucesso.html",
+        pagamento=pagamento,
+        proxima=proxima,
+    )
