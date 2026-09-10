@@ -1,0 +1,33 @@
+{% for p in perfil.lista %}
+<tr>
+    <td><strong>{{ p.aluno }}</strong></td>
+    <td>
+        <span class="badge bg-{{ 'success' if p.dias_medio <= 0 else 'warning' if p.dias_medio <= 3 else 'danger' }}">
+            {{ p.dias_medio }} dia{{ 's' if p.dias_medio != 1 }}
+        </span>
+    </td>
+    <td>{{ p.tendencia }}</td>
+    <td>{{ p.total_pagamentos }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% if perfil.pages > 1 %}
+<div class="card-footer border-0 bg-transparent pt-0">
+    <nav class="d-flex justify-content-between align-items-center">
+        <small class="text-muted">Mostrando {{ ((perfil.page-1)*10)+1 }}-{{ [perfil.page*10, perfil.total]|min }} de {{ perfil.total }}</small>
+        <ul class="pagination pagination-sm mb-0">
+            {% for p in range(1, perfil.pages + 1) %}
+            <li class="page-item {{ 'active' if p == perfil.page }}">
+<a class="page-link ajax-page" 
+   href="?q={{ q }}&section=perfil&page_fat={{ request.args.get('page_fat',1) }}&page_inad={{ request.args.get('page_inad',1) }}&page_est={{ request.args.get('page_est',1) }}&page_aviso={{ request.args.get('page_aviso',1) }}&page_perfil={{ p }}"
+   data-target="tbody-perfil" data-section="perfil">
+                   {{ p }}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </nav>
+</div>
+{% endif %}

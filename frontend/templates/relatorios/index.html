@@ -146,33 +146,11 @@
                         <thead class="table-dark">
                             <tr><th>Data</th><th>Aluno</th><th>Plano</th><th>Valor</th><th>Forma</th></tr>
                         </thead>
-                        <tbody>
-                            {% for p in fat.lista %}
-                            <tr>
-                                <td>{{ p.data_pagamento.strftime('%d/%m/%Y') }}</td>
-                                <td><strong>{{ p.mensalidade.matricula.aluno.nome }}</strong></td>
-                                <td>{{ p.mensalidade.matricula.plano.nome }}</td>
-                                <td class="text-success fw-bold">R$ {{ "%.2f"|format(p.valor_pago) }}</td>
-                                <td><span class="badge bg-light text-dark">{{ p.forma_pagamento.replace('_', ' ').title() }}</span></td>
-                            </tr>
-                            {% else %}
-                            <tr><td colspan="5" class="text-center py-4 text-muted"><i class="bi bi-inbox d-block mb-1"></i>Nenhum pagamento neste mes.</td></tr>
-                            {% endfor %}
+                        <tbody id="tbody-fat">
+                            {% include 'relatorios/partials/_table_fat.html' %}
                         </tbody>
                     </table>
                 </div>
-                {% if fat.pages > 1 %}
-                <div class="card-footer border-0 bg-transparent pt-0">
-                    <nav class="d-flex justify-content-between align-items-center">
-                        <small class="text-muted">Mostrando {{ ((fat.page-1)*10)+1 }}-{{ [fat.page*10, fat.total]|min }} de {{ fat.total }}</small>
-                        <ul class="pagination pagination-sm mb-0">
-                            {% for p in range(1, fat.pages + 1) %}
-                            <li class="page-item {{ 'active' if p == fat.page }}"><a class="page-link" href="?q={{ q }}&page_fat={{ p }}&page_inad={{ request.args.get('page_inad',1) }}&page_est={{ request.args.get('page_est',1) }}&page_aviso={{ request.args.get('page_aviso',1) }}&page_perfil={{ request.args.get('page_perfil',1) }}">{{ p }}</a></li>
-                            {% endfor %}
-                        </ul>
-                    </nav>
-                </div>
-                {% endif %}
             </div>
         </div>
     </div>
@@ -195,33 +173,11 @@
                         <thead class="table-dark">
                             <tr><th>Aluno</th><th>Plano</th><th>Valor</th><th>Vencimento</th><th>Dias Atraso</th></tr>
                         </thead>
-                        <tbody>
-                            {% for m in inad.lista %}
-                            <tr>
-                                <td><strong>{{ m.matricula.aluno.nome }}</strong></td>
-                                <td>{{ m.matricula.plano.nome }}</td>
-                                <td class="text-danger fw-bold">R$ {{ "%.2f"|format(m.valor) }}</td>
-                                <td>{{ m.data_vencimento.strftime('%d/%m/%Y') }}</td>
-                                <td><span class="badge bg-danger">{{ (hoje - m.data_vencimento).days }} dias</span></td>
-                            </tr>
-                            {% else %}
-                            <tr><td colspan="5" class="text-center py-4 text-success"><i class="bi bi-check-circle-fill d-block mb-1 fs-3"></i>Nenhuma inadimplencia! Parabens!</td></tr>
-                            {% endfor %}
+                        <tbody id="tbody-inad">
+                            {% include 'relatorios/partials/_table_inad.html' %}
                         </tbody>
                     </table>
                 </div>
-                {% if inad.pages > 1 %}
-                <div class="card-footer border-0 bg-transparent pt-0">
-                    <nav class="d-flex justify-content-between align-items-center">
-                        <small class="text-muted">Mostrando {{ ((inad.page-1)*10)+1 }}-{{ [inad.page*10, inad.total]|min }} de {{ inad.total }}</small>
-                        <ul class="pagination pagination-sm mb-0">
-                            {% for p in range(1, inad.pages + 1) %}
-                            <li class="page-item {{ 'active' if p == inad.page }}"><a class="page-link" href="?q={{ q }}&page_fat={{ request.args.get('page_fat',1) }}&page_inad={{ p }}&page_est={{ request.args.get('page_est',1) }}&page_aviso={{ request.args.get('page_aviso',1) }}&page_perfil={{ request.args.get('page_perfil',1) }}">{{ p }}</a></li>
-                            {% endfor %}
-                        </ul>
-                    </nav>
-                </div>
-                {% endif %}
             </div>
         </div>
     </div>
@@ -244,33 +200,11 @@
                         <thead class="table-dark">
                             <tr><th>Aluno</th><th>Plano</th><th>Valor</th><th>Vencimento</th><th>Status</th></tr>
                         </thead>
-                        <tbody>
-                            {% for e in est.lista %}
-                            <tr>
-                                <td><strong>{{ e.aluno }}</strong></td>
-                                <td>{{ e.plano }}</td>
-                                <td class="text-info fw-bold">R$ {{ "%.2f"|format(e.valor) }}</td>
-                                <td>{{ e.vencimento.strftime('%d/%m/%Y') }}</td>
-                                <td><span class="badge bg-{{ 'info' if e.status == 'estimado' else 'warning' }}">{{ 'Estimado' if e.status == 'estimado' else 'Pendente' }}</span></td>
-                            </tr>
-                            {% else %}
-                            <tr><td colspan="5" class="text-center py-4 text-muted"><i class="bi bi-inbox d-block mb-1"></i>Nenhuma estimativa.</td></tr>
-                            {% endfor %}
+                        <tbody id="tbody-est">
+                            {% include 'relatorios/partials/_table_est.html' %}
                         </tbody>
                     </table>
                 </div>
-                {% if est.pages > 1 %}
-                <div class="card-footer border-0 bg-transparent pt-0">
-                    <nav class="d-flex justify-content-between align-items-center">
-                        <small class="text-muted">Mostrando {{ ((est.page-1)*10)+1 }}-{{ [est.page*10, est.total]|min }} de {{ est.total }}</small>
-                        <ul class="pagination pagination-sm mb-0">
-                            {% for p in range(1, est.pages + 1) %}
-                            <li class="page-item {{ 'active' if p == est.page }}"><a class="page-link" href="?q={{ q }}&page_fat={{ request.args.get('page_fat',1) }}&page_inad={{ request.args.get('page_inad',1) }}&page_est={{ p }}&page_aviso={{ request.args.get('page_aviso',1) }}&page_perfil={{ request.args.get('page_perfil',1) }}">{{ p }}</a></li>
-                            {% endfor %}
-                        </ul>
-                    </nav>
-                </div>
-                {% endif %}
             </div>
         </div>
     </div>
@@ -294,16 +228,8 @@
                         <thead class="table-dark">
                             <tr><th>Aluno</th><th>Plano</th><th>Valor</th><th>Vencimento</th><th>Faltam</th></tr>
                         </thead>
-                        <tbody>
-                            {% for m in aviso.lista %}
-                            <tr class="table-warning">
-                                <td><strong>{{ m.matricula.aluno.nome }}</strong></td>
-                                <td>{{ m.matricula.plano.nome }}</td>
-                                <td>R$ {{ "%.2f"|format(m.valor) }}</td>
-                                <td>{{ m.data_vencimento.strftime('%d/%m/%Y') }}</td>
-                                <td><span class="badge bg-warning text-dark">{{ (m.data_vencimento - hoje).days }} dias</span></td>
-                            </tr>
-                            {% endfor %}
+                        <tbody id="tbody-aviso">
+                            {% include 'relatorios/partials/_table_aviso.html' %}
                         </tbody>
                     </table>
                 </div>
@@ -331,34 +257,11 @@
                         <thead class="table-dark">
                             <tr><th>Aluno</th><th>Media Atraso</th><th>Tendencia</th><th>Total Pagamentos</th></tr>
                         </thead>
-                        <tbody>
-                            {% for p in perfil.lista %}
-                            <tr>
-                                <td><strong>{{ p.aluno }}</strong></td>
-                                <td>
-                                    <span class="badge bg-{{ 'success' if p.dias_medio <= 0 else 'warning' if p.dias_medio <= 3 else 'danger' }}">
-                                        {{ p.dias_medio }} dia{{ 's' if p.dias_medio != 1 }}
-                                    </span>
-                                </td>
-                                <td>{{ p.tendencia }}</td>
-                                <td>{{ p.total_pagamentos }}</td>
-                            </tr>
-                            {% endfor %}
+                        <tbody id="tbody-perfil">
+                            {% include 'relatorios/partials/_table_perfil.html' %}
                         </tbody>
                     </table>
                 </div>
-                {% if perfil.pages > 1 %}
-                <div class="card-footer border-0 bg-transparent pt-0">
-                    <nav class="d-flex justify-content-between align-items-center">
-                        <small class="text-muted">Mostrando {{ ((perfil.page-1)*10)+1 }}-{{ [perfil.page*10, perfil.total]|min }} de {{ perfil.total }}</small>
-                        <ul class="pagination pagination-sm mb-0">
-                            {% for p in range(1, perfil.pages + 1) %}
-                            <li class="page-item {{ 'active' if p == perfil.page }}"><a class="page-link" href="?q={{ q }}&page_fat={{ request.args.get('page_fat',1) }}&page_inad={{ request.args.get('page_inad',1) }}&page_est={{ request.args.get('page_est',1) }}&page_aviso={{ request.args.get('page_aviso',1) }}&page_perfil={{ p }}">{{ p }}</a></li>
-                            {% endfor %}
-                        </ul>
-                    </nav>
-                </div>
-                {% endif %}
             </div>
         </div>
     </div>
@@ -421,5 +324,47 @@
         });
     });
     {% endif %}
+
+    // ===== AJAX PAGINATION FOR ACCORDION TABLES =====
+    document.addEventListener('DOMContentLoaded', function() {
+        // Delegate click on pagination links inside accordions
+        document.querySelectorAll('.accordion-body').forEach(function(body) {
+            body.addEventListener('click', function(e) {
+                const link = e.target.closest('.ajax-page');
+                if (!link) return;
+                
+                e.preventDefault();
+                
+                const targetId = link.dataset.target; // e.g., "tbody-fat"
+                const targetEl = document.getElementById(targetId);
+                if (!targetEl) return;
+                
+                const url = link.href;
+                
+                // Show loading state
+                targetEl.style.opacity = '0.5';
+                
+                fetch(url, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(response => response.text())
+                .then(html => {
+                    targetEl.innerHTML = html;
+                    targetEl.style.opacity = '1';
+                    
+                    // Update active state in pagination
+                    const pagination = link.closest('.pagination');
+                    if (pagination) {
+                        pagination.querySelectorAll('.page-item').forEach(item => item.classList.remove('active'));
+                        link.closest('.page-item').classList.add('active');
+                    }
+                })
+                .catch(err => {
+                    console.error('Erro ao carregar página:', err);
+                    targetEl.style.opacity = '1';
+                });
+            });
+        });
+    });
 </script>
 {% endblock %}
