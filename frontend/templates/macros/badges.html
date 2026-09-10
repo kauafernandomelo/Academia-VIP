@@ -43,7 +43,7 @@
     {% endif %}
 {%- endmacro %}
 
-{% macro mensalidade_tipo_badge(mensalidade) -#}
+{% macro mensalidade_tipo_badge(mensalidade) -%}
     {# Retorna badge indicando se é renovação ou pagamento integral #}
     {% set renova = not mensalidade.paga and mensalidade.data_vencimento >= mensalidade.matricula.data_fim %}
     {% set integral = mensalidade.paga and mensalidade.valor == mensalidade.matricula.plano.valor and mensalidade.data_vencimento == mensalidade.matricula.data_inicio %}
@@ -54,7 +54,7 @@
     {% endif %}
 {%- endmacro %}
 
-{% macro mensalidade_dias_badge(mensalidade) -#}
+{% macro mensalidade_dias_badge(mensalidade) -%}
     {# Retorna badge com dias restantes da mensalidade #}
     {% set dias = mensalidade.dias_restantes %}
     {% if dias is not none %}
@@ -70,7 +70,7 @@
     {% endif %}
 {%- endmacro %}
 
-{% macro aluno_status_badge(aluno) -#}
+{% macro aluno_status_badge(aluno) -%}
     {# Retorna badge de status do aluno (ativo/inativo) #}
     {% if aluno.ativo %}
         <span class="badge bg-success" title="Aluno ativo">Ativo</span>
@@ -79,7 +79,7 @@
     {% endif %}
 {%- endmacro %}
 
-{% macro plano_status_badge(plano) -#}
+{% macro plano_status_badge(plano) -%}
     {# Retorna badge de status do plano (ativo/inativo) #}
     {% if plano.ativo %}
         <span class="badge bg-success" title="Plano ativo para novas matrículas">Ativo</span>
@@ -88,7 +88,7 @@
     {% endif %}
 {%- endmacro %}
 
-{% macro forma_pagamento_badge(forma) -#}
+{% macro forma_pagamento_badge(forma) -%}
     {# Retorna label formatado da forma de pagamento #}
     {% set labels = {
         'dinheiro': 'Dinheiro',
@@ -100,7 +100,7 @@
     <span class="badge bg-light text-dark">{{ labels.get(forma, forma.replace('_', ' ').title()) }}</span>
 {%- endmacro %}
 
-{% macro perfil_tendencia_badge(dias_medio) -#}
+{% macro perfil_tendencia_badge(dias_medio) -%}
     {# Retorna badge colorido baseado na média de dias de atraso #}
     {% if dias_medio <= 0 %}
         <span class="badge bg-success" title="Paga em dia ou antecipado">{{ dias_medio }} dia{{ 's' if dias_medio != 1 }}</span>
