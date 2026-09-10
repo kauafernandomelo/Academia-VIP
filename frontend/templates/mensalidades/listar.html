@@ -3,7 +3,9 @@
 {% block titulo %}Mensalidades - Academia VIP{% endblock %}
 
 {% block conteudo %}
-<h2 class="mb-4"><i class="bi bi-cash-stack"></i> Mensalidades</h2>
+<div class="page-header mb-4">
+    <h2 class="mb-0"><i class="bi bi-cash-stack"></i> Mensalidades</h2>
+</div>
 
 <!-- BARRA DE BUSCA E FILTROS -->
 <div class="card mb-4">
@@ -55,6 +57,13 @@
                         <span class="badge bg-warning">Pendente</span>
                     {% endif %}
                 </div>
+                {% set renova = not mensal.paga and mensal.data_vencimento >= mensal.matricula.data_fim %}
+                {% set integral = mensal.paga and mensal.valor == mensal.matricula.plano.valor and mensal.data_vencimento == mensal.matricula.data_inicio %}
+                {% if renova %}
+                <span class="badge bg-info">Renovacao do plano</span>
+                {% elif integral %}
+                <span class="badge bg-secondary">Pagamento integral</span>
+                {% endif %}
                 <hr class="my-2" style="border-color: var(--vip-border);">
                 <p class="mb-1"><strong>Plano:</strong> {{ mensal.matricula.plano.nome }}</p>
                 <p class="mb-1"><strong>Vencimento:</strong> {{ mensal.data_vencimento.strftime('%d/%m/%Y') }}</p>

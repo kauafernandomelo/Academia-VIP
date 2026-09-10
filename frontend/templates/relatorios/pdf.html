@@ -1,105 +1,220 @@
 <!DOCTYPE html>
-<html lang="pt-BBR">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <title>Relatorio Academia VIP</title>
     <style>
-        body { font-family: Helvetica, Arial, sans-serif; font-size: 11px; color: #333; margin: 20px; }
-        h1 { text-align: center; color: #1a1a2e; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; }
-        h2 { color: #1a1a2e; font-size: 14px; margin-top: 20px; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
-        .resumo { display: flex; justify-content: space-around; margin: 20px 0; }
-        .resumo-box { text-align: center; padding: 15px; border: 1px solid #ddd; border-radius: 8px; width: 30%; }
-        .resumo-valor { font-size: 18px; font-weight: bold; color: #1a1a2e; }
-        .resumo-label { font-size: 10px; color: #666; margin-top: 5px; }
-        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
-        th { background: #1a1a2e; color: white; padding: 8px; text-align: left; font-size: 10px; }
-        td { padding: 6px 8px; border-bottom: 1px solid #eee; font-size: 10px; }
-        tr:nth-child(even) { background: #f9f9f9; }
-        .total { font-weight: bold; background: #f0f0f0; }
-        .footer { text-align: center; margin-top: 30px; font-size: 9px; color: #999; border-top: 1px solid #ddd; padding-top: 10px; }
+        body { font-family: Helvetica, Arial, sans-serif; font-size: 10px; color: #222; }
+        .capa { background: #1a1a2e; color: #fff; padding: 22px 20px; border-radius: 8px; }
+        .capa h1 { margin: 0; font-size: 22px; color: #fff; }
+        .capa h1 span { color: #D4AF37; }
+        .capa p { margin: 4px 0 0; color: #cfcfe0; font-size: 10px; }
+        .faixa { background: #D4AF37; height: 3px; margin: 8px 0 14px; border-radius: 2px; }
+
+        .resumo { width: 100%; border-collapse: separate; border-spacing: 5px; margin: 10px 0 6px; }
+        .resumo td { width: 25%; text-align: center; padding: 12px 6px; border-radius: 8px; }
+        .resumo .gold { background: #FFF8E1; border: 2px solid #D4AF37; }
+        .resumo .red { background: #FFEBEE; border: 2px solid #ff1744; }
+        .resumo .green { background: #E8F5E9; border: 2px solid #00c853; }
+        .resumo .amber { background: #FFF8E1; border: 2px solid #ffab00; }
+        .resumo .v { font-size: 16px; font-weight: bold; }
+        .resumo .l { font-size: 8px; color: #555; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .resumo .sub { font-size: 8px; color: #777; }
+
+        h2 { color: #1a1a2e; font-size: 13px; margin: 18px 0 6px; border-bottom: 2px solid #D4AF37; padding-bottom: 4px; }
+        h3 { font-size: 10px; color: #555; margin: 8px 0 4px; }
+
+        table.data { width: 100%; border-collapse: collapse; margin: 6px 0; }
+        table.data th { background: #1a1a2e; color: #fff; padding: 6px 7px; text-align: left; font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.5px; }
+        table.data td { padding: 5px 7px; border-bottom: 1px solid #eee; font-size: 9px; }
+        table.data tr:nth-child(even) td { background: #f6f6fb; }
+        table.data .num { text-align: right; }
+        table.data tr.total td { font-weight: bold; background: #FFF8E1; border-top: 2px solid #D4AF37; }
+
+        .barchart, .barchart table { width: 100%; border-collapse: collapse; }
+        .barchart table td { padding: 2px 4px; font-size: 8.5px; }
+        .barchart .lb { width: 16%; color: #555; }
+        .barchart .bv { width: 72%; }
+        .barchart .vl { width: 12%; text-align: right; font-weight: bold; }
+        .bar-wrap { background: #f0f0f5; border-radius: 4px; height: 14px; }
+        .bar { background: #D4AF37; height: 14px; border-radius: 4px; }
+        .bar.red { background: #ff1744; }
+        .bar.green { background: #00c853; }
+        .bar.amber { background: #ffab00; }
+
+        .statusrow td { height: 22px; }
+        .status-axis { width: 100%; border-bottom: 2px solid #1a1a2e; }
+
+        .aviso-item td { background: #FFF8E1 !important; }
+        .note { font-size: 8px; color: #777; padding: 4px 0; }
+        .pagebreak { page-break-before: always; }
+        .footer { text-align: center; margin-top: 20px; font-size: 8px; color: #bbb; }
     </style>
 </head>
 <body>
-    <h1>ACADEMIA VIP - RELATORIO GERAL</h1>
-    <p style="text-align: center; color: #666;">{{ meses[mes_atual] }}/{{ ano_atual }} | Gerado em: {{ hoje.strftime('%d/%m/%Y') }}</p>
 
-    <div class="resumo">
-        <div class="resumo-box">
-            <div class="resumo-valor">R$ {{ "%.2f"|format(total_faturamento) }}</div>
-            <div class="resumo-label">Faturamento do Mes</div>
-        </div>
-        <div class="resumo-box">
-            <div class="resumo-valor" style="color: #ff1744;">R$ {{ "%.2f"|format(total_inadimplencia) }}</div>
-            <div class="resumo-label">Inadimplencia</div>
-        </div>
-        <div class="resumo-box">
-            <div class="resumo-valor" style="color: #00c853;">R$ {{ "%.2f"|format(total_estimativa) }}</div>
-            <div class="resumo-label">Estimativa {{ meses[proximo_mes.month] }}</div>
-        </div>
+    <div class="capa">
+        <h1>ACADEMIA <span>VIP</span></h1>
+        <p>Relatorio Geral - {{ meses[mes_atual] }}/{{ ano_atual }} &nbsp;|&nbsp; Gerado em {{ hoje.strftime('%d/%m/%Y') }}</p>
+    </div>
+    <div class="faixa"></div>
+
+    <table class="resumo">
+        <tr>
+            <td class="gold">
+                <div class="v">R$ {{ "%.2f"|format(total_faturamento) }}</div>
+                <div class="l">Faturamento {{ meses[mes_atual] }}</div>
+                <div class="sub">{{ pagamentos_mes|length }} pagamento(s)</div>
+            </td>
+            <td class="red">
+                <div class="v">R$ {{ "%.2f"|format(total_inadimplencia) }}</div>
+                <div class="l">Inadimplencia</div>
+                <div class="sub">{{ mensalidades_atrasadas|length }} mensalidade(s)</div>
+            </td>
+            <td class="green">
+                <div class="v">R$ {{ "%.2f"|format(total_estimativa) }}</div>
+                <div class="l">Estimativa {{ meses[proximo_mes.month] }}</div>
+                <div class="sub">{{ estimativas|length }} cobranca(s)</div>
+            </td>
+            <td class="amber">
+                <div class="v">{{ mensalidades_aviso|length }}</div>
+                <div class="l">Vencem em ate 7 dias</div>
+                <div class="sub">acompanhar</div>
+            </td>
+        </tr>
+    </table>
+
+    <h2>Faturamento - Ultimos 6 Meses</h2>
+    {% if faturamento_mensal %}
+    {% set max_valor = (faturamento_mensal|map(attribute='valor')|max)|float|default(1, true) %}
+    <div class="barchart">
+        <table>
+            {% for f in faturamento_mensal %}
+            <tr>
+                <td class="lb">{{ f.mes }}</td>
+                <td class="bv">
+                    <div class="bar-wrap">
+                        <div class="bar" style="width: {{ (f.valor / max_valor * 100)|round(1) }}%;"></div>
+                    </div>
+                </td>
+                <td class="vl">R$ {{ "%.2f"|format(f.valor) }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    {% endif %}
+
+    <h2>Status das Mensalidades de {{ meses[mes_atual] }}</h2>
+    {% set sc_total = status_count.pagas + status_count.pendentes + status_count.atrasadas %}
+    <div class="barchart">
+        <table>
+            <tr>
+                <td style="width:16%;"></td>
+                <td style="width:84%;">
+                    <div class="bar-wrap">
+                        {% if sc_total > 0 %}
+                        <div class="bar green" style="width: {{ (status_count.pagas / sc_total * 100)|round(1) }}%; float:left;"></div>
+                        <div class="bar amber" style="width: {{ (status_count.pendentes / sc_total * 100)|round(1) }}%; float:left;"></div>
+                        <div class="bar red" style="width: {{ (status_count.atrasadas / sc_total * 100)|round(1) }}%; float:left;"></div>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td></td>
+                <td style="padding-top:4px;">
+                    <span style="color:#00c853;">&#9632;</span> Pagas: {{ status_count.pagas }}
+                    &nbsp;&nbsp; <span style="color:#ffab00;">&#9632;</span> Pendentes: {{ status_count.pendentes }}
+                    &nbsp;&nbsp; <span style="color:#ff1744;">&#9632;</span> Atrasadas: {{ status_count.atrasadas }}
+                </td>
+            </tr>
+        </table>
     </div>
 
-    <h2>Faturamento do Mes - {{ meses[mes_atual] }}</h2>
-    <table>
-        <tr><th>Data</th><th>Aluno</th><th>Plano</th><th>Valor</th><th>Forma</th></tr>
+    <h2 class="pagebreak">Faturamento do Mes - {{ meses[mes_atual] }}</h2>
+    <table class="data">
+        <tr><th>Data</th><th>Aluno</th><th>Plano</th><th class="num">Valor</th><th>Forma</th></tr>
         {% for p in pagamentos_mes %}
         <tr>
             <td>{{ p.data_pagamento.strftime('%d/%m/%Y') }}</td>
             <td>{{ p.mensalidade.matricula.aluno.nome }}</td>
             <td>{{ p.mensalidade.matricula.plano.nome }}</td>
-            <td>R$ {{ "%.2f"|format(p.valor_pago) }}</td>
+            <td class="num">R$ {{ "%.2f"|format(p.valor_pago) }}</td>
             <td>{{ p.forma_pagamento.replace('_', ' ').title() }}</td>
         </tr>
+        {% else %}
+        <tr><td colspan="5" style="text-align:center; color:#999; padding:14px;">Nenhum pagamento registrado neste mes.</td></tr>
         {% endfor %}
-        <tr class="total"><td colspan="3">TOTAL</td><td>R$ {{ "%.2f"|format(total_faturamento) }}</td><td></td></tr>
+        <tr class="total"><td colspan="3">TOTAL</td><td class="num">R$ {{ "%.2f"|format(total_faturamento) }}</td><td></td></tr>
     </table>
 
-    <h2>Inadimplencia</h2>
-    <table>
-        <tr><th>Aluno</th><th>Plano</th><th>Valor</th><th>Vencimento</th><th>Dias Atraso</th></tr>
+    <h2 class="pagebreak">Inadimplencia</h2>
+    <table class="data">
+        <tr><th>Aluno</th><th>Plano</th><th class="num">Valor</th><th>Vencimento</th><th class="num">Dias de Atraso</th></tr>
         {% for m in mensalidades_atrasadas %}
         <tr>
             <td>{{ m.matricula.aluno.nome }}</td>
             <td>{{ m.matricula.plano.nome }}</td>
-            <td>R$ {{ "%.2f"|format(m.valor) }}</td>
+            <td class="num">R$ {{ "%.2f"|format(m.valor) }}</td>
             <td>{{ m.data_vencimento.strftime('%d/%m/%Y') }}</td>
-            <td>{{ (hoje - m.data_vencimento).days }} dias</td>
+            <td class="num" style="color:#ff1744; font-weight:bold;">{{ (hoje - m.data_vencimento).days }} dias</td>
         </tr>
+        {% else %}
+        <tr><td colspan="5" style="text-align:center; color:#00c853; padding:14px;">Nenhuma inadimplencia. Parabens!</td></tr>
         {% endfor %}
-        <tr class="total"><td colspan="2">TOTAL</td><td>R$ {{ "%.2f"|format(total_inadimplencia) }}</td><td></td><td></td></tr>
+        <tr class="total"><td colspan="2">TOTAL</td><td class="num">R$ {{ "%.2f"|format(total_inadimplencia) }}</td><td></td><td></td></tr>
     </table>
 
     <h2>Estimativa - {{ meses[proximo_mes.month] }}/{{ proximo_mes.year }}</h2>
-    <table>
-        <tr><th>Aluno</th><th>Plano</th><th>Valor</th><th>Vencimento</th><th>Status</th></tr>
+    <table class="data">
+        <tr><th>Aluno</th><th>Plano</th><th class="num">Valor</th><th>Vencimento</th><th>Status</th></tr>
         {% for e in estimativas %}
         <tr>
             <td>{{ e.aluno }}</td>
             <td>{{ e.plano }}</td>
-            <td>R$ {{ "%.2f"|format(e.valor) }}</td>
+            <td class="num">R$ {{ "%.2f"|format(e.valor) }}</td>
             <td>{{ e.vencimento.strftime('%d/%m/%Y') }}</td>
-            <td>{{ 'Estimado' if e.status == 'estimado' else 'Pendente' }}</td>
+            <td><span style="color:#ff8f00;">{{ 'Estimado' if e.status == 'estimado' else 'Pendente' }}</span></td>
         </tr>
+        {% else %}
+        <tr><td colspan="5" style="text-align:center; color:#999; padding:14px;">Nenhuma cobranca prevista para o proximo mes.</td></tr>
         {% endfor %}
-        <tr class="total"><td colspan="2">TOTAL</td><td>R$ {{ "%.2f"|format(total_estimativa) }}</td><td></td><td></td></tr>
+        <tr class="total"><td colspan="2">TOTAL</td><td class="num">R$ {{ "%.2f"|format(total_estimativa) }}</td><td></td><td></td></tr>
+    </table>
+
+    <h2 class="pagebreak">Avisos - Vencimento em ate 7 dias</h2>
+    <table class="data">
+        <tr><th>Aluno</th><th>Plano</th><th class="num">Valor</th><th>Vencimento</th><th class="num">Faltam</th></tr>
+        {% for m in mensalidades_aviso %}
+        <tr class="aviso-item">
+            <td>{{ m.matricula.aluno.nome }}</td>
+            <td>{{ m.matricula.plano.nome }}</td>
+            <td class="num">R$ {{ "%.2f"|format(m.valor) }}</td>
+            <td>{{ m.data_vencimento.strftime('%d/%m/%Y') }}</td>
+            <td class="num" style="font-weight:bold;">{{ (m.data_vencimento - hoje).days }} dias</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" style="text-align:center; color:#00c853; padding:14px;">Nenhum vencimento proximo.</td></tr>
+        {% endfor %}
     </table>
 
     {% if perfis %}
-    <h2>Perfil de Pagamento</h2>
-    <table>
-        <tr><th>Aluno</th><th>Media Dias Atraso</th><th>Tendencia</th><th>Pagamentos</th></tr>
+    <h2>Perfil de Pagamento dos Alunos</h2>
+    <table class="data">
+        <tr><th>Aluno</th><th class="num">Media de Atraso</th><th>Tendencia</th><th class="num">Total de Pagamentos</th></tr>
         {% for p in perfis %}
         <tr>
             <td>{{ p.aluno }}</td>
-            <td>{{ p.dias_medio }} dias</td>
+            <td class="num">{{ p.dias_medio }} dia(s)</td>
             <td>{{ p.tendencia }}</td>
-            <td>{{ p.total_pagamentos }}</td>
+            <td class="num">{{ p.total_pagamentos }}</td>
         </tr>
         {% endfor %}
     </table>
     {% endif %}
 
     <div class="footer">
-        Academia VIP - Sistema de Gerenciamento | Relatorio gerado automaticamente
+        Academia VIP - Sistema de Gerenciamento de Academia | Documento gerado automaticamente
     </div>
 </body>
 </html>

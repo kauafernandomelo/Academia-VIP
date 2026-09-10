@@ -44,6 +44,24 @@
                 {% endif %}
             </div>
         </div>
+        {% elif matricula and matricula.ativa %}
+        <div class="card mt-4 border-success">
+            <div class="card-body text-center">
+                <i class="bi bi-check-circle text-success display-4"></i>
+                <h4 class="mt-2">Nenhuma cobranca pendente</h4>
+                <p class="text-muted">
+                    Plano vigente ate <strong>{{ matricula.data_fim.strftime('%d/%m/%Y') }}</strong>.
+                    A renovacao sera cobrada automaticamente quando estiver perto de vencer.
+                </p>
+                {% if matricula.dias_restantes is not none %}
+                    {% if matricula.dias_restantes <= 7 %}
+                        <span class="badge bg-warning text-dark fs-6">Faltam {{ matricula.dias_restantes }} dias para vencer</span>
+                    {% else %}
+                        <span class="badge bg-success fs-6">Faltam {{ matricula.dias_restantes }} dias para vencer</span>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
         {% else %}
         <div class="card mt-4 border-success">
             <div class="card-body text-center">

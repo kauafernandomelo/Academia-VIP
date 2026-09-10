@@ -38,8 +38,12 @@ def logout():
 @auth_bp.route("/")
 @login_required
 def dashboard():
+    from datetime import date, timedelta
     from models import Aluno, Mensalidade, Matricula
-    from datetime import date
+    from regras import garantir_renovacoes
+
+    # Garantir cobrancas de renovacao antes de mostrar os numeros
+    garantir_renovacoes()
 
     total_alunos = Aluno.query.filter_by(ativo=True).count()
     matriculas_ativas = Matricula.query.filter_by(ativa=True).count()
@@ -50,10 +54,22 @@ def dashboard():
         Mensalidade.data_vencimento < date.today()
     ).count()
 
+    # Alunos com vencimento em ate 7 dias (avisos)
+    data_limite = date.today() + timedelta(days=7)
+    vencem_7dias = (
+        Mensalidade.query.filter_by(paga=False)
+        .filter(
+            Mensalidade.data_vencimento >= date.today(),
+            Mensalidade.data_vencimento <= data_limite,
+        )
+        .all()
+    )
+
     return render_template(
         "dashboard.html",
         total_alunos=total_alunos,
         matriculas_ativas=matriculas_ativas,
         mensalidades_pendentes=mensalidades_pendentes,
         mensalidades_atrasadas=mensalidades_atrasadas,
+        vencem_7dias=vencem_7dias,
     )

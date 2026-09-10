@@ -111,29 +111,37 @@ class Matricula(db.Model, TimestampMixin):
         if not self.esta_vigente:
             return False
         mensalidade = self.mensalidade_atual
-        if mensalidade and mensalidade.esta_atrasada:
+        if mensalidade and not mensalidade.paga and mensalidade.esta_atrasada:
             return False
         return True
 
     @property
     def dias_restantes(self):
+        """Dias que faltam para o acesso expirar.
+
+        Se existir uma mensalidade do mes atual NAO paga, conta ate o
+        vencimento dela (pode ser negativo -> atrasada). Caso contrario
+        (planos integrais ja pagos / sem cobranca pendente), conta ate o
+        fim do periodo do plano (data_fim).
+        """
+        if not self.ativa:
+            return None
+        hoje = date.today()
         mensalidade = self.mensalidade_atual
         if mensalidade and not mensalidade.paga:
-            delta = mensalidade.data_vencimento - date.today()
-            return max(0, delta.days)
-        return None
+            return (mensalidade.data_vencimento - hoje).days
+        return (self.data_fim - hoje).days
 
     @property
     def status_catraca(self):
         if not self.esta_vigente:
             return "bloqueado"
         mensalidade = self.mensalidade_atual
-        if mensalidade:
-            if mensalidade.esta_atrasada:
-                return "bloqueado"
-            dias = self.dias_restantes
-            if dias is not None and dias <= 7:
-                return "aviso"
+        if mensalidade and not mensalidade.paga and mensalidade.esta_atrasada:
+            return "bloqueado"
+        dias = self.dias_restantes
+        if dias is not None and dias <= 7:
+            return "aviso"
         return "liberado"
 
     def __repr__(self):

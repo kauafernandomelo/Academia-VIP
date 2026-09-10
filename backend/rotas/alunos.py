@@ -2,7 +2,8 @@ from datetime import date, timedelta
 from dateutil.relativedelta import relativedelta
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required
-from models import db, Aluno, Plano, Matricula, Mensalidade
+from models import db, Aluno, Plano, Matricula
+from regras import gerar_mensalidade_inicial
 
 alunos_bp = Blueprint("alunos", __name__)
 
@@ -52,6 +53,7 @@ def novo():
         # Criar matricula automaticamente
         plano_id = int(request.form["plano_id"])
         data_inicio = date.fromisoformat(request.form["data_inicio"])
+        forma_pagamento = request.form.get("forma_pagamento", "pix").strip()
 
         plano = Plano.query.get_or_404(plano_id)
         data_fim = data_inicio + relativedelta(months=plano.duracao_meses)
@@ -65,8 +67,8 @@ def novo():
         db.session.add(matricula)
         db.session.flush()
 
-        # Gerar mensalidades
-        _gerar_mensalidades(matricula, plano, data_inicio)
+        # Pagamento integral do plano no ato da matricula
+        gerar_mensalidade_inicial(matricula, plano, data_inicio, forma_pagamento)
 
         db.session.commit()
         flash("Aluno cadastrado e matriculado com sucesso!", "success")
@@ -116,14 +118,3 @@ def _parse_date(date_str):
     if date_str:
         return date.fromisoformat(date_str)
     return None
-
-
-def _gerar_mensalidades(matricula, plano, data_inicio):
-    for i in range(plano.duracao_meses):
-        vencimento = data_inicio + relativedelta(months=i)
-        mensalidade = Mensalidade(
-            matricula_id=matricula.id,
-            valor=plano.valor / plano.duracao_meses,
-            data_vencimento=vencimento,
-        )
-        db.session.add(mensalidade)

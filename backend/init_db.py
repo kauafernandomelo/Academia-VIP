@@ -1,10 +1,16 @@
-"""Script para inicializar o banco de dados, criar o primeiro administrador, planos padrao e 100 alunos de teste."""
+"""Script para inicializar o banco de dados, criar o primeiro administrador, planos padrao e 100 alunos de teste.
+
+Inclui:
+- Correcao automatica de dados legados (regra antiga com mensalidades fracionadas)
+- Seed de 100 alunos com cobranca integral (1 pagamento pelo valor cheio do plano)
+"""
 
 import random
 from datetime import date, timedelta
 from dateutil.relativedelta import relativedelta
 from app import criar_app
 from models import db, Usuario, Plano, Aluno, Matricula, Mensalidade, Pagamento
+from regras import gerar_mensalidade_inicial, corrigir_dados_legados
 
 NOMES_MASCULINOS = [
     "Joao Pedro", "Lucas Oliveira", "Matheus Silva", "Gabriel Santos", "Rafael Lima",
@@ -60,11 +66,12 @@ def gerar_telefone():
 
 
 def seed_alunos(planos):
+    """Cria 100 alunos com cobranca integral (1 pagamento = valor cheio do plano)."""
     if Aluno.query.count() >= 50:
         print(f"Banco ja tem {Aluno.query.count()} alunos. Pulando seed.")
         return
 
-    print("Criando 100 alunos de teste...")
+    print("Criando 100 alunos de teste (nova regra: cobranca integral)...")
     hoje = date.today()
     plano_map = {p.nome: p for p in planos}
     cpfs_usados = set()
@@ -117,50 +124,19 @@ def seed_alunos(planos):
         db.session.add(matricula)
         db.session.flush()
 
-        valor_mensal = float(plano.valor) / plano.duracao_meses
-        for j in range(plano.duracao_meses):
-            vencimento = data_inicio + relativedelta(months=j)
-            cenario = random.random()
+        # Cobranca integral: 1 pagamento = valor cheio do plano
+        forma = random.choice(FORMAS_PAGAMENTO)
+        gerar_mensalidade_inicial(matricula, plano, data_inicio, forma_pagamento=forma)
 
-            mensalidade = Mensalidade(
+        # Alguns alunos com renovacao pendente (plano perto de vencer ou vencido)
+        if (data_fim - hoje).days <= 7 and matricula.ativa and random.random() < 0.4:
+            renovacao = Mensalidade(
                 matricula_id=matricula.id,
-                valor=valor_mensal,
-                data_vencimento=vencimento,
+                valor=plano.valor,
+                data_vencimento=data_fim,
                 paga=False,
             )
-            db.session.add(mensalidade)
-            db.session.flush()
-
-            if cenario < 0.35:
-                data_pag = vencimento + timedelta(days=random.randint(-5, 2))
-                if data_pag > hoje:
-                    data_pag = hoje - timedelta(days=random.randint(0, 5))
-                mensalidade.paga = True
-                mensalidade.data_pagamento = data_pag
-                pagamento = Pagamento(
-                    mensalidade_id=mensalidade.id,
-                    valor_pago=valor_mensal,
-                    data_pagamento=data_pag,
-                    forma_pagamento=random.choice(FORMAS_PAGAMENTO),
-                )
-                db.session.add(pagamento)
-            elif cenario < 0.55:
-                pass
-            elif cenario < 0.75:
-                pass
-            else:
-                data_pag = vencimento + timedelta(days=random.randint(1, 30))
-                if data_pag > hoje:
-                    data_pag = hoje - timedelta(days=random.randint(0, 3))
-                mensalidade.paga = True
-                mensalidade.data_pagamento = data_pag
-                pagamento = Pagamento(
-                    mensalidade_id=mensalidade.id,
-                    valor_pago=valor_mensal,
-                    data_pagamento=data_pag,
-                    forma_pagamento=random.choice(FORMAS_PAGAMENTO),
-                )
-                db.session.add(pagamento)
+            db.session.add(renovacao)
 
     db.session.commit()
 
@@ -168,11 +144,11 @@ def seed_alunos(planos):
     total_pendentes = Mensalidade.query.filter(Mensalidade.paga == False, Mensalidade.data_vencimento >= hoje).count()
     total_atrasadas = Mensalidade.query.filter(Mensalidade.paga == False, Mensalidade.data_vencimento < hoje).count()
 
-    print(f"100 alunos criados!")
+    print(f"100 alunos criados com cobranca integral!")
     print(f"Mensalidades: {Mensalidade.query.count()}")
     print(f"Pagamentos: {Pagamento.query.count()}")
     print(f"  Pagas: {total_pagas}")
-    print(f"  Pendentes: {total_pendentes}")
+    print(f"  Pendentes (renovacoes): {total_pendentes}")
     print(f"  Atrasadas: {total_atrasadas}")
 
 
@@ -181,7 +157,15 @@ app = criar_app()
 with app.app_context():
     db.create_all()
 
-    # Criar administrador
+    # --- Correcao de dados legados ---
+    total_mensalidades_antes = Mensalidade.query.count()
+    if total_mensalidades_antes > 0:
+        print(f"\nBanco contem {total_mensalidades_antes} mensalidades. Verificando dados legados...")
+        corrigidos, removidos = corrigir_dados_legados()
+        print(f"  Matriculas corrigidas: {corrigidos}")
+        print(f"  Mensalidades fantasmas removidas: {removidos}")
+
+    # --- Administrador ---
     if not Usuario.query.filter_by(login="admin").first():
         admin = Usuario(nome="Administrador", login="admin", admin=True)
         admin.definir_senha("admin123")
@@ -191,7 +175,7 @@ with app.app_context():
     else:
         print("Administrador ja existe.")
 
-    # Criar planos padrao
+    # --- Planos padrao ---
     planos_padrao = [
         {"nome": "Mensal", "valor": 65.00, "duracao_meses": 1, "descricao": "Plano mensal sem desconto"},
         {"nome": "Trimestral", "valor": 175.50, "duracao_meses": 3, "descricao": "Plano trimestral com 10% de desconto (R$58,50/mes)"},
@@ -207,7 +191,7 @@ with app.app_context():
     db.session.commit()
     print("Planos criados/verificados.")
 
-    # Seed 100 alunos
+    # --- Seed 100 alunos ---
     planos = Plano.query.filter_by(ativo=True).all()
     seed_alunos(planos)
 

@@ -607,6 +607,33 @@ h5 .bi {
     color: var(--vip-gold);
 }
 
+/* ---- Navbar Active Page ---- */
+.vip-navbar .nav-link.active {
+    color: var(--vip-gold) !important;
+    background: rgba(212, 175, 55, 0.1);
+    font-weight: 700;
+}
+
+/* ---- Responsive Helpers ---- */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.filtro-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+}
+
+.chart-container {
+    position: relative;
+    height: 280px;
+}
+
 /* ---- Scrollbar ---- */
 ::-webkit-scrollbar {
     width: 8px;
@@ -626,13 +653,120 @@ h5 .bi {
 }
 
 /* ---- Responsive ---- */
-@media (max-width: 768px) {
-    .stat-card .stat-value {
-        font-size: 1.5rem;
+/* Desktops */
+@media (max-width: 991px) {
+    .navbar-nav .nav-link {
+        padding: 0.5rem 0.7rem !important;
     }
+}
 
+/* Tablets */
+@media (max-width: 767px) {
+    .stat-card .stat-value {
+        font-size: 1.4rem;
+    }
+    .stat-card {
+        padding: 1rem;
+    }
+    .stat-card .stat-icon {
+        width: 42px;
+        height: 42px;
+        font-size: 1.2rem;
+    }
     .login-card {
         margin: 1rem;
-        padding: 2rem;
+        padding: 1.5rem;
+    }
+    .table thead th {
+        padding: 0.6rem;
+        font-size: 0.72rem;
+    }
+    .table td {
+        padding: 0.55rem 0.6rem;
+        font-size: 0.85rem;
+    }
+    .card {
+        border-radius: 10px;
+    }
+    .btn {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.82rem;
+    }
+    .pagination .page-link {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.82rem;
+    }
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .page-header .btn {
+        width: 100%;
+    }
+    h2 {
+        font-size: 1.3rem;
+    }
+}
+
+/* Cell phones */
+@media (max-width: 575px) {
+    body {
+        font-size: 14px;
+    }
+    .stat-card .stat-value {
+        font-size: 1.15rem;
+    }
+    .stat-card .stat-label {
+        font-size: 0.72rem;
+    }
+    .stat-card .stat-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+    }
+    .table td, .table th {
+        padding: 0.45rem 0.4rem;
+        font-size: 0.78rem;
+    }
+    .table thead th {
+        font-size: 0.68rem;
+        padding: 0.5rem 0.4rem;
+    }
+    .btn {
+        padding: 0.35rem 0.6rem;
+        font-size: 0.78rem;
+    }
+    .badge {
+        font-size: 0.65rem;
+        padding: 0.3em 0.5em;
+    }
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .page-header .btn {
+        width: 100%;
+        text-align: center;
+    }
+    h2 {
+        font-size: 1.1rem;
+    }
+    .login-card {
+        margin: 0.75rem;
+        padding: 1.25rem;
+    }
+    .login-card .logo-container img {
+        width: 80px;
+        height: 80px;
+    }
+    .chart-container {
+        height: 220px;
+    }
+}
+
+/* Hide columns on very small screens */
+@media (max-width: 575px) {
+    .d-none-mobile {
+        display: none !important;
     }
 }

@@ -2,6 +2,7 @@ from datetime import date
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required
 from models import db, Mensalidade, Pagamento, Aluno
+from regras import garantir_renovacoes, aplicar_pagamento
 
 mensalidades_bp = Blueprint("mensalidades", __name__)
 
@@ -12,6 +13,9 @@ def listar():
     page = request.args.get("page", 1, type=int)
     status = request.args.get("status", "todas")
     q = request.args.get("q", "").strip()
+
+    # Garantir cobrancas de renovacao antes de listar
+    garantir_renovacoes()
 
     query = Mensalidade.query.join(Mensalidade.matricula).join(Aluno)
 
@@ -51,18 +55,12 @@ def pagar(id):
         return redirect(url_for("mensalidades.listar"))
 
     if request.method == "POST":
-        pagamento = Pagamento(
-            mensalidade_id=mensalidade.id,
+        aplicar_pagamento(
+            mensalidade,
             valor_pago=float(request.form["valor_pago"]),
-            data_pagamento=date.today(),
             forma_pagamento=request.form["forma_pagamento"],
             observacao=request.form.get("observacao", "").strip() or None,
         )
-
-        mensalidade.paga = True
-        mensalidade.data_pagamento = date.today()
-
-        db.session.add(pagamento)
         db.session.commit()
 
         # Encontrar proxima mensalidade
@@ -72,7 +70,7 @@ def pagar(id):
             Mensalidade.id != mensalidade.id,
         ).order_by(Mensalidade.data_vencimento).first()
 
-        return redirect(url_for("mensalidades.sucesso", pagamento_id=pagamento.id, proxima_id=proxima.id if proxima else None))
+        return redirect(url_for("mensalidades.sucesso", pagamento_id=mensalidade.pagamentos[-1].id if mensalidade.pagamentos else None, proxima_id=proxima.id if proxima else None))
 
     return render_template("mensalidades/pagar.html", mensalidade=mensalidade)
 
@@ -85,9 +83,11 @@ def sucesso():
 
     pagamento = Pagamento.query.get_or_404(pagamento_id)
     proxima = Mensalidade.query.get(proxima_id) if proxima_id else None
+    matricula = pagamento.mensalidade.matricula if pagamento.mensalidade else None
 
     return render_template(
         "mensalidades/sucesso.html",
         pagamento=pagamento,
         proxima=proxima,
+        matricula=matricula,
     )

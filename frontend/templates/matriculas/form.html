@@ -10,7 +10,7 @@
 <div class="card">
     <div class="card-body">
         <form method="POST">
-            <div class="row">
+            <div class="row g-3">
                 <div class="col-md-6 mb-3">
                     <label class="form-label">Aluno *</label>
                     <select name="aluno_id" class="form-select" required>
@@ -30,11 +30,23 @@
                     </select>
                 </div>
             </div>
-            <div class="row">
+            <div class="row g-3">
                 <div class="col-md-6 mb-3">
                     <label class="form-label">Data de Inicio *</label>
                     <input type="date" name="data_inicio" class="form-control" 
                            value="{{ hoje }}" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Forma de Pagamento *</label>
+                    <select name="forma_pagamento" class="form-select" required>
+                        <option value="">Selecione...</option>
+                        <option value="pix">PIX</option>
+                        <option value="dinheiro">Dinheiro</option>
+                        <option value="cartao_credito">Cartao de Credito</option>
+                        <option value="cartao_debito">Cartao de Debito</option>
+                        <option value="boleto">Boleto</option>
+                    </select>
+                    <small class="text-muted">O valor integral do plano sera pago no ato da matricula.</small>
                 </div>
             </div>
             <div class="d-flex gap-2">

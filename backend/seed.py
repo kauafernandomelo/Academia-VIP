@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Script de seed - Gera 100 alunos aleatorios para testes
+Script de seed - Gera 100 alunos aleatorios com cobranca integral
 Roda: cd backend && python seed.py
 """
 
@@ -13,6 +13,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from app import criar_app
 from models import db, Aluno, Plano, Matricula, Mensalidade, Pagamento
+from regras import gerar_mensalidade_inicial
 from dateutil.relativedelta import relativedelta
 
 NOMES_MASCULINOS = [
@@ -25,7 +26,7 @@ NOMES_MASCULINOS = [
     "Daniel Gomes", "Fernando Dias", "Alexandre Ribeiro", "Claudio Martins", "Rogerio Santos",
     "Fabio Almeida", "Juliano Costa", "Marcio Pereira", "Leandro Lima", "Cristiano Araujo",
     "Adriano Silva", "Marcelo Oliveira", "Antonio Carlos", "Jose Eduardo", "Francisco Almeida",
-    "Roberto Neto", "Carlos Alberto", "João Vitor", "Pedro Lucas", "Miguel Santos",
+    "Roberto Neto", "Carlos Alberto", "Joao Vitor", "Pedro Lucas", "Miguel Santos",
 ]
 
 NOMES_FEMININOS = [
@@ -38,7 +39,7 @@ NOMES_FEMININOS = [
     "Vanessa Oliveira", "Luciana Almeida", "Aline Costa", "Cristiane Pereira", "Simone Ribeiro",
     "Tatiane Lima", "Priscila Araujo", "Rosana Barbosa", "Denise Rodrigues", "Eliane Gomes",
     "Sandra Dias", "Marta Cardoso", "Raquel Ferreira", "Juliana Martins", "Bianca Souza",
-    "Daniela Nascimento", "Amanda Lima", "Priscila Santos", "Letícia Almeida", "Camila Oliveira",
+    "Daniela Nascimento", "Amanda Lima", "Priscila Santos", "Leticia Almeida", "Camila Oliveira",
 ]
 
 SOBRENOMES = [
@@ -54,11 +55,9 @@ FORMAS_PAGAMENTO = ["dinheiro", "pix", "cartao_credito", "cartao_debito", "bolet
 
 def gerar_cpf():
     cpf = [random.randint(0, 9) for _ in range(9)]
-    # Primeiro digito verificador
     soma = sum((10 - i) * cpf[i] for i in range(9))
     resto = soma % 11
     cpf.append(0 if resto < 2 else 11 - resto)
-    # Segundo digito verificador
     soma = sum((11 - i) * cpf[i] for i in range(10))
     resto = soma % 11
     cpf.append(0 if resto < 2 else 11 - resto)
@@ -94,11 +93,11 @@ def criar_seed():
         alunos_criados = 0
         mensalidades_criadas = 0
         pagamentos_registrados = 0
+        renovacoes_pendentes = 0
 
-        print("Criando 100 alunos...")
+        print("Criando 100 alunos (cobranca integral)...")
 
         for i in range(100):
-            # Gerar nome
             if random.random() < 0.55:
                 nome_base = random.choice(NOMES_MASCULINOS)
             else:
@@ -106,25 +105,22 @@ def criar_seed():
             sobrenome = random.choice(SOBRENOMES)
             nome = f"{nome_base} {sobrenome}"
 
-            # Gerar CPF unico
             cpf = gerar_cpf()
             while Aluno.query.filter_by(cpf=cpf).first():
                 cpf = gerar_cpf()
 
-            # Criar aluno
             aluno = Aluno(
                 nome=nome,
                 cpf=cpf,
                 telefone=gerar_telefone(),
                 data_nascimento=hoje - timedelta(days=random.randint(18*365, 55*365)),
                 data_cadastro=hoje - timedelta(days=random.randint(0, 365)),
-                ativo=random.random() > 0.05,  # 95% ativos
+                ativo=random.random() > 0.05,
             )
             db.session.add(aluno)
             db.session.flush()
             alunos_criados += 1
 
-            # Escolher plano (distribuicao variada)
             escolha = random.random()
             if escolha < 0.30:
                 plano = plano_map.get("Mensal") or planos[0]
@@ -135,12 +131,10 @@ def criar_seed():
             else:
                 plano = plano_map.get("Anual") or planos[min(3, len(planos)-1)]
 
-            # Data de inicio: espalhada nos ultimos 3 meses (para gerar mix de statuses)
             dias_atras = random.randint(0, 90)
             data_inicio = hoje - timedelta(days=dias_atras)
             data_fim = data_inicio + relativedelta(months=plano.duracao_meses)
 
-            # Criar matricula
             matricula = Matricula(
                 aluno_id=aluno.id,
                 plano_id=plano.id,
@@ -151,70 +145,37 @@ def criar_seed():
             db.session.add(matricula)
             db.session.flush()
 
-            # Gerar mensalidades
-            valor_mensal = float(plano.valor) / plano.duracao_meses
-            for j in range(plano.duracao_meses):
-                vencimento = data_inicio + relativedelta(months=j)
+            # Cobranca integral: 1 pagamento = valor cheio do plano
+            forma = random.choice(FORMAS_PAGAMENTO)
+            gerar_mensalidade_inicial(matricula, plano, data_inicio, forma_pagamento=forma)
+            mensalidades_criadas += 1
+            pagamentos_registrados += 1
 
-                # Status baseado em cenario aleatorio
-                cenario = random.random()
-
-                if cenario < 0.30:
-                    # Cenario: Pago (ja pagou)
-                    dias_deslocamento = random.randint(-5, 2)
-                    data_pagamento_real = vencimento + timedelta(days=dias_deslocamento)
-                    if data_pagamento_real > hoje:
-                        data_pagamento_real = hoje - timedelta(days=random.randint(0, 5))
-                    paga = True
-                elif cenario < 0.55:
-                    # Cenario: Pendente (ainda nao venceu ou vence hoje)
-                    paga = False
-                elif cenario < 0.80:
-                    # Cenario: Atrasado (venceu e nao pagou)
-                    paga = False
-                else:
-                    # Cenario: Pago com atraso
-                    dias_atraso = random.randint(1, 30)
-                    data_pagamento_real = vencimento + timedelta(days=dias_atraso)
-                    if data_pagamento_real > hoje:
-                        data_pagamento_real = hoje - timedelta(days=random.randint(0, 3))
-                    paga = True
-
-                mensalidade = Mensalidade(
+            # Alguns com renovacao pendente (plano perto de vencer ou vencido)
+            if (data_fim - hoje).days <= 7 and matricula.ativa and random.random() < 0.4:
+                renovacao = Mensalidade(
                     matricula_id=matricula.id,
-                    valor=valor_mensal,
-                    data_vencimento=vencimento,
-                    paga=False,  # sera atualizado depois
+                    valor=plano.valor,
+                    data_vencimento=data_fim,
+                    paga=False,
                 )
-                db.session.add(mensalidade)
-                db.session.flush()
+                db.session.add(renovacao)
+                renovacoes_pendentes += 1
                 mensalidades_criadas += 1
-
-                # Registrar pagamento se necessario
-                if paga:
-                    pagamento = Pagamento(
-                        mensalidade_id=mensalidade.id,
-                        valor_pago=valor_mensal,
-                        data_pagamento=data_pagamento_real if 'data_pagamento_real' in locals() else hoje,
-                        forma_pagamento=random.choice(FORMAS_PAGAMENTO),
-                    )
-                    mensalidade.paga = True
-                    mensalidade.data_pagamento = pagamento.data_pagamento
-                    db.session.add(pagamento)
-                    pagamentos_registrados += 1
 
         db.session.commit()
 
         print(f"\n{'='*50}")
-        print(f"SEED CONCLUIDO!")
+        print(f"SEED CONCLUIDO (COBRANCA INTEGRAL)")
         print(f"{'='*50}")
         print(f"Alunos criados: {alunos_criados}")
         print(f"Matriculas criadas: {alunos_criados}")
         print(f"Mensalidades criadas: {mensalidades_criadas}")
+        print(f"  - Pagas (integral): {pagamentos_registrados}")
+        print(f"  - Renovacoes pendentes: {renovacoes_pendentes}")
         print(f"Pagamentos registrados: {pagamentos_registrados}")
         print(f"{'='*50}")
 
-        # Estatisticas
         total_pagas = Mensalidade.query.filter_by(paga=True).count()
         total_pendentes = Mensalidade.query.filter(
             Mensalidade.paga == False,
@@ -226,7 +187,7 @@ def criar_seed():
         ).count()
         print(f"\nStatus das mensalidades:")
         print(f"  Pagas: {total_pagas}")
-        print(f"  Pendentes: {total_pendentes}")
+        print(f"  Pendentes (renovacoes): {total_pendentes}")
         print(f"  Atrasadas: {total_atrasadas}")
         print(f"\nAcesse o sistema e teste todas as paginas!")
 

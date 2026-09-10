@@ -3,66 +3,98 @@
 {% block titulo %}Dashboard - Academia VIP{% endblock %}
 
 {% block conteudo %}
-<h2 class="mb-4"><i class="bi bi-speedometer2"></i> Dashboard</h2>
+<h2 class="mb-4 page-header">
+    <span><i class="bi bi-speedometer2"></i> Dashboard</span>
+</h2>
 
-<div class="row g-4">
-    <div class="col-md-3">
-        <div class="stat-card gold">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <div class="stat-value">{{ total_alunos }}</div>
-                    <div class="stat-label">Alunos Ativos</div>
-                </div>
-                <div class="stat-icon">
-                    <i class="bi bi-people-fill"></i>
-                </div>
+<!-- Alerta de vencimentos proximos -->
+{% if vencem_7dias %}
+<div class="alert alert-warning border-warning mb-4" role="alert">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-bell-fill fs-5"></i>
+            <div>
+                <strong>{{ vencem_7dias|length }} mensalidade(s) vencem em ate 7 dias</strong>
+                <br><small>Acompanhe as renovacoes do plano.</small>
             </div>
         </div>
+        <a href="{{ url_for('mensalidades.listar', status='pendentes') }}" class="btn btn-sm btn-warning">
+            <i class="bi bi-eye"></i> Ver pendentes
+        </a>
     </div>
-    <div class="col-md-3">
-        <div class="stat-card success">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <div class="stat-value">{{ matriculas_ativas }}</div>
-                    <div class="stat-label">Matriculas Ativas</div>
-                </div>
-                <div class="stat-icon">
-                    <i class="bi bi-clipboard-check"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stat-card warning">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <div class="stat-value">{{ mensalidades_pendentes }}</div>
-                    <div class="stat-label">Pendentes</div>
-                </div>
-                <div class="stat-icon">
-                    <i class="bi bi-clock-history"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stat-card danger">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <div class="stat-value">{{ mensalidades_atrasadas }}</div>
-                    <div class="stat-label">Em Atraso</div>
-                </div>
-                <div class="stat-icon">
-                    <i class="bi bi-exclamation-triangle"></i>
-                </div>
-            </div>
+</div>
+{% endif %}
+
+<!-- Alerta inadimplencia -->
+{% if mensalidades_atrasadas > 0 %}
+<div class="alert alert-danger border-danger mb-4" role="alert">
+    <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+        <div>
+            <strong>{{ mensalidades_atrasadas }} mensalidade(s) em atraso</strong>
         </div>
     </div>
 </div>
+{% endif %}
 
-<div class="row mt-4 g-4">
+<div class="row g-3">
+    <div class="col-6 col-md-3">
+        <a href="{{ url_for('alunos.listar') }}" class="text-decoration-none">
+            <div class="stat-card gold h-100">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-value">{{ total_alunos }}</div>
+                        <div class="stat-label">Alunos Ativos</div>
+                    </div>
+                    <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-md-3">
+        <a href="{{ url_for('matriculas.listar', status='ativas') }}" class="text-decoration-none">
+            <div class="stat-card success h-100">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-value">{{ matriculas_ativas }}</div>
+                        <div class="stat-label">Matriculas Ativas</div>
+                    </div>
+                    <div class="stat-icon"><i class="bi bi-clipboard-check"></i></div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-md-3">
+        <a href="{{ url_for('mensalidades.listar', status='pendentes') }}" class="text-decoration-none">
+            <div class="stat-card warning h-100">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-value">{{ mensalidades_pendentes }}</div>
+                        <div class="stat-label">Pendentes</div>
+                    </div>
+                    <div class="stat-icon"><i class="bi bi-clock-history"></i></div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-md-3">
+        <a href="{{ url_for('mensalidades.listar', status='atrasadas') }}" class="text-decoration-none">
+            <div class="stat-card danger h-100">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-value">{{ mensalidades_atrasadas }}</div>
+                        <div class="stat-label">Em Atraso</div>
+                    </div>
+                    <div class="stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<div class="row mt-3 g-3">
     <div class="col-md-6">
-        <div class="card">
+        <div class="card h-100">
             <div class="card-body">
                 <h5 class="card-title mb-3"><i class="bi bi-lightning-fill"></i> Acesso Rapido</h5>
                 <div class="row g-3">
@@ -77,7 +109,7 @@
                         <a href="{{ url_for('mensalidades.listar') }}" class="quick-card warning">
                             <div class="quick-icon"><i class="bi bi-cash-coin"></i></div>
                             <h6>Ver Mensalidades</h6>
-                            <p>Gerenciar pagamentos</p>
+                            <p>Gerenciar pagamentos e renovacoes</p>
                         </a>
                     </div>
                 </div>
@@ -85,7 +117,7 @@
         </div>
     </div>
     <div class="col-md-6">
-        <div class="card">
+        <div class="card h-100">
             <div class="card-body">
                 <h5 class="card-title mb-3"><i class="bi bi-bar-chart-fill"></i> Relatorios</h5>
                 <div class="row g-3">

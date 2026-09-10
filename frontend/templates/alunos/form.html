@@ -11,7 +11,7 @@
 <div class="card">
     <div class="card-body">
         <form method="POST">
-            <div class="row">
+            <div class="row g-3">
                 <div class="col-md-6 mb-3">
                     <label class="form-label">Nome *</label>
                     <input type="text" name="nome" class="form-control" value="{{ aluno.nome if aluno else '' }}" required placeholder="Nome completo">
@@ -22,7 +22,7 @@
                            required {{ 'readonly' if edicao else '' }} placeholder="000.000.000-00">
                 </div>
             </div>
-            <div class="row">
+            <div class="row g-3">
                 <div class="col-md-6 mb-3">
                     <label class="form-label">Telefone *</label>
                     <input type="text" name="telefone" class="form-control" value="{{ aluno.telefone if aluno else '' }}" required placeholder="(00) 00000-0000">
@@ -40,15 +40,27 @@
                 {% endif %}
             </div>
             {% if not edicao %}
-            <div class="row">
+            <div class="row g-3">
                 <div class="col-md-6 mb-3">
                     <label class="form-label">Data de Inicio *</label>
                     <input type="date" name="data_inicio" class="form-control" value="{{ hoje }}" required min="{{ hoje }}">
                 </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Forma de Pagamento *</label>
+                    <select name="forma_pagamento" class="form-select" required>
+                        <option value="">Selecione...</option>
+                        <option value="pix">PIX</option>
+                        <option value="dinheiro">Dinheiro</option>
+                        <option value="cartao_credito">Cartao de Credito</option>
+                        <option value="cartao_debito">Cartao de Debito</option>
+                        <option value="boleto">Boleto</option>
+                    </select>
+                    <small class="text-muted">O valor integral do plano sera pago no ato da matricula.</small>
+                </div>
             </div>
             {% endif %}
             {% if edicao %}
-            <div class="row">
+            <div class="row g-3">
                 <div class="col-md-6 mb-3">
                     <label class="form-label">E-mail</label>
                     <input type="email" name="email" class="form-control" value="{{ aluno.email if aluno and aluno.email else '' }}" placeholder="email@exemplo.com">
