@@ -3,17 +3,34 @@
 {% block titulo %}Relatorio Geral - Academia VIP{% endblock %}
 
 {% block conteudo %}
+{% macro pagina_atual(tabela) %}page_{{ tabela }}={{ request.args.get('page_' + tabela, '1') }}{% endmacro %}
+{% macro manter_params(excluir='') %}
+q={{ q }}{% if excluir != 'fat' %}&page_fat={{ request.args.get('page_fat', '1') }}{% endif %}{% if excluir != 'inad' %}&page_inad={{ request.args.get('page_inad', '1') }}{% endif %}{% if excluir != 'est' %}&page_est={{ request.args.get('page_est', '1') }}{% endif %}{% if excluir != 'aviso' %}&page_aviso={{ request.args.get('page_aviso', '1') }}{% endif %}{% if excluir != 'perfil' %}&page_perfil={{ request.args.get('page_perfil', '1') }}{% endif %}
+{% endmacro %}
+
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2><i class="bi bi-file-earmark-bar-graph"></i> Relatorio Geral - {{ meses[mes_atual] }}/{{ ano_atual }}</h2>
+    <h2><i class="bi bi-file-earmark-bar-graph"></i> Relatorio - {{ meses[mes_atual] }}/{{ ano_atual }}</h2>
     <div class="d-flex gap-2">
         <a href="{{ url_for('relatorios.pdf') }}" class="btn btn-danger">
-            <i class="bi bi-file-earmark-pdf"></i> Baixar PDF
+            <i class="bi bi-file-earmark-pdf"></i> PDF
         </a>
         <a href="{{ url_for('relatorios.excel') }}" class="btn btn-success">
-            <i class="bi bi-file-earmark-excel"></i> Baixar Excel
+            <i class="bi bi-file-earmark-excel"></i> Excel
         </a>
     </div>
 </div>
+
+<!-- BUSCA GLOBAL -->
+<form method="GET" class="mb-4">
+    <div class="input-group">
+        <span class="input-group-text"><i class="bi bi-search"></i></span>
+        <input type="text" name="q" class="form-control" placeholder="Buscar por nome ou CPF..." value="{{ q }}">
+        <button class="btn btn-primary" type="submit">Buscar</button>
+        {% if q %}
+        <a href="{{ url_for('relatorios.index') }}" class="btn btn-secondary">Limpar</a>
+        {% endif %}
+    </div>
+</form>
 
 <!-- STAT CARDS -->
 <div class="row g-4 mb-4">
@@ -74,22 +91,17 @@
 
 <!-- FATURAMENTO DO MES -->
 <div class="card mb-4">
-    <div class="card-header">
-        <i class="bi bi-check-circle-fill text-success"></i> <strong>Faturamento do Mes - {{ meses[mes_atual] }}</strong>
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-check-circle-fill text-success"></i> <strong>Faturamento - {{ meses[mes_atual] }}</strong></span>
+        <span class="badge bg-success">{{ fat.total }} registro{{ 's' if fat.total != 1 }}</span>
     </div>
     <div class="table-responsive">
         <table class="table table-hover mb-0">
             <thead class="table-dark">
-                <tr>
-                    <th>Data Pagamento</th>
-                    <th>Aluno</th>
-                    <th>Plano</th>
-                    <th>Valor</th>
-                    <th>Forma</th>
-                </tr>
+                <tr><th>Data</th><th>Aluno</th><th>Plano</th><th>Valor</th><th>Forma</th></tr>
             </thead>
             <tbody>
-                {% for p in pagamentos_mes %}
+                {% for p in fat.lista %}
                 <tr>
                     <td>{{ p.data_pagamento.strftime('%d/%m/%Y') }}</td>
                     <td><strong>{{ p.mensalidade.matricula.aluno.nome }}</strong></td>
@@ -98,168 +110,162 @@
                     <td>{{ p.forma_pagamento.replace('_', ' ').title() }}</td>
                 </tr>
                 {% else %}
-                <tr>
-                    <td colspan="5" class="text-center py-4" style="color: var(--vip-text-muted);">
-                        <i class="bi bi-inbox display-4 d-block mb-2"></i>
-                        Nenhum pagamento registrado neste mes.
-                    </td>
-                </tr>
+                <tr><td colspan="5" class="text-center py-3" style="color:var(--vip-text-muted)"><i class="bi bi-inbox d-block mb-1"></i>Nenhum registro encontrado.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+    {% if fat.pages > 1 %}
+    <div class="card-footer">
+        <nav class="d-flex justify-content-between align-items-center">
+            <small class="text-muted">Mostrando {{ ((fat.page-1)*10)+1 }}-{{ [fat.page*10, fat.total]|min }} de {{ fat.total }}</small>
+            <ul class="pagination pagination-sm mb-0">
+                {% for p in range(1, fat.pages + 1) %}
+                <li class="page-item {{ 'active' if p == fat.page }}"><a class="page-link" href="?q={{ q }}&page_fat={{ p }}&page_inad={{ request.args.get('page_inad',1) }}&page_est={{ request.args.get('page_est',1) }}&page_aviso={{ request.args.get('page_aviso',1) }}&page_perfil={{ request.args.get('page_perfil',1) }}">{{ p }}</a></li>
+                {% endfor %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
 </div>
 
 <!-- INADIMPLENCIA -->
 <div class="card mb-4">
-    <div class="card-header">
-        <i class="bi bi-exclamation-circle-fill text-danger"></i> <strong>Inadimplencia - Mensalidades em Atraso</strong>
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-exclamation-circle-fill text-danger"></i> <strong>Inadimplencia</strong></span>
+        <span class="badge bg-danger">{{ inad.total }} registro{{ 's' if inad.total != 1 }}</span>
     </div>
     <div class="table-responsive">
         <table class="table table-hover mb-0">
             <thead class="table-dark">
-                <tr>
-                    <th>Aluno</th>
-                    <th>Plano</th>
-                    <th>Valor</th>
-                    <th>Vencimento</th>
-                    <th>Dias em Atraso</th>
-                </tr>
+                <tr><th>Aluno</th><th>Plano</th><th>Valor</th><th>Vencimento</th><th>Atraso</th></tr>
             </thead>
             <tbody>
-                {% for m in mensalidades_atrasadas %}
+                {% for m in inad.lista %}
                 <tr>
                     <td><strong>{{ m.matricula.aluno.nome }}</strong></td>
                     <td>{{ m.matricula.plano.nome }}</td>
                     <td>R$ {{ "%.2f"|format(m.valor) }}</td>
                     <td>{{ m.data_vencimento.strftime('%d/%m/%Y') }}</td>
-                    <td>
-                        {% set dias = (hoje - m.data_vencimento).days %}
-                        <span class="badge bg-danger">{{ dias }} {{ 'dia' if dias == 1 else 'dias' }}</span>
-                    </td>
+                    <td><span class="badge bg-danger">{{ (hoje - m.data_vencimento).days }} dias</span></td>
                 </tr>
                 {% else %}
-                <tr>
-                    <td colspan="5" class="text-center py-4" style="color: var(--vip-text-muted);">
-                        <i class="bi bi-check-circle display-4 d-block mb-2 text-success"></i>
-                        Nenhuma mensalidade em atraso. Parabens!
-                    </td>
-                </tr>
+                <tr><td colspan="5" class="text-center py-3" style="color:var(--vip-text-muted)"><i class="bi bi-check-circle d-block mb-1 text-success"></i>Nenhuma inadimplencia. Parabens!</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+    {% if inad.pages > 1 %}
+    <div class="card-footer">
+        <nav class="d-flex justify-content-between align-items-center">
+            <small class="text-muted">Mostrando {{ ((inad.page-1)*10)+1 }}-{{ [inad.page*10, inad.total]|min }} de {{ inad.total }}</small>
+            <ul class="pagination pagination-sm mb-0">
+                {% for p in range(1, inad.pages + 1) %}
+                <li class="page-item {{ 'active' if p == inad.page }}"><a class="page-link" href="?q={{ q }}&page_fat={{ request.args.get('page_fat',1) }}&page_inad={{ p }}&page_est={{ request.args.get('page_est',1) }}&page_aviso={{ request.args.get('page_aviso',1) }}&page_perfil={{ request.args.get('page_perfil',1) }}">{{ p }}</a></li>
+                {% endfor %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
 </div>
 
 <!-- ESTIMATIVA PROXIMO MES -->
 <div class="card mb-4">
-    <div class="card-header">
-        <i class="bi bi-calendar-event"></i> <strong>Estimativa - {{ meses[proximo_mes.month] }}/{{ proximo_mes.year }}</strong>
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-calendar-event"></i> <strong>Estimativa - {{ meses[proximo_mes.month] }}</strong></span>
+        <span class="badge bg-info">{{ est.total }} registro{{ 's' if est.total != 1 }}</span>
     </div>
     <div class="table-responsive">
         <table class="table table-hover mb-0">
             <thead class="table-dark">
-                <tr>
-                    <th>Aluno</th>
-                    <th>Plano</th>
-                    <th>Valor</th>
-                    <th>Vencimento</th>
-                    <th>Status</th>
-                </tr>
+                <tr><th>Aluno</th><th>Plano</th><th>Valor</th><th>Vencimento</th><th>Status</th></tr>
             </thead>
             <tbody>
-                {% for e in estimativas %}
+                {% for e in est.lista %}
                 <tr>
                     <td><strong>{{ e.aluno }}</strong></td>
                     <td>{{ e.plano }}</td>
                     <td>R$ {{ "%.2f"|format(e.valor) }}</td>
                     <td>{{ e.vencimento.strftime('%d/%m/%Y') }}</td>
-                    <td>
-                        {% if e.status == 'estimado' %}
-                            <span class="badge bg-info">Estimado</span>
-                        {% else %}
-                            <span class="badge bg-warning">Pendente</span>
-                        {% endif %}
-                    </td>
+                    <td><span class="badge bg-{{ 'info' if e.status == 'estimado' else 'warning' }}">{{ 'Estimado' if e.status == 'estimado' else 'Pendente' }}</span></td>
                 </tr>
                 {% else %}
-                <tr>
-                    <td colspan="5" class="text-center py-4" style="color: var(--vip-text-muted);">
-                        <i class="bi bi-inbox display-4 d-block mb-2"></i>
-                        Nenhuma estimativa para o proximo mes.
-                    </td>
-                </tr>
+                <tr><td colspan="5" class="text-center py-3" style="color:var(--vip-text-muted)"><i class="bi bi-inbox d-block mb-1"></i>Nenhuma estimativa.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+    {% if est.pages > 1 %}
+    <div class="card-footer">
+        <nav class="d-flex justify-content-between align-items-center">
+            <small class="text-muted">Mostrando {{ ((est.page-1)*10)+1 }}-{{ [est.page*10, est.total]|min }} de {{ est.total }}</small>
+            <ul class="pagination pagination-sm mb-0">
+                {% for p in range(1, est.pages + 1) %}
+                <li class="page-item {{ 'active' if p == est.page }}"><a class="page-link" href="?q={{ q }}&page_fat={{ request.args.get('page_fat',1) }}&page_inad={{ request.args.get('page_inad',1) }}&page_est={{ p }}&page_aviso={{ request.args.get('page_aviso',1) }}&page_perfil={{ request.args.get('page_perfil',1) }}">{{ p }}</a></li>
+                {% endfor %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
 </div>
 
 <!-- AVISO 7 DIAS -->
-{% if mensalidades_aviso %}
+{% if aviso.total > 0 %}
 <div class="card mb-4 border-warning">
-    <div class="card-header bg-warning text-dark">
-        <i class="bi bi-bell-fill"></i> <strong>Alunos com Aviso - Faltam 7 dias ou menos</strong>
+    <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-bell-fill"></i> <strong>Aviso - Faltam 7 dias ou menos</strong></span>
+        <span class="badge bg-dark text-warning">{{ aviso.total }}</span>
     </div>
     <div class="table-responsive">
         <table class="table table-hover mb-0">
             <thead class="table-dark">
-                <tr>
-                    <th>Aluno</th>
-                    <th>Plano</th>
-                    <th>Valor</th>
-                    <th>Vencimento</th>
-                    <th>Faltam</th>
-                </tr>
+                <tr><th>Aluno</th><th>Plano</th><th>Valor</th><th>Vencimento</th><th>Faltam</th></tr>
             </thead>
             <tbody>
-                {% for m in mensalidades_aviso %}
+                {% for m in aviso.lista %}
                 <tr>
                     <td><strong>{{ m.matricula.aluno.nome }}</strong></td>
                     <td>{{ m.matricula.plano.nome }}</td>
                     <td>R$ {{ "%.2f"|format(m.valor) }}</td>
                     <td>{{ m.data_vencimento.strftime('%d/%m/%Y') }}</td>
-                    <td>
-                        {% set dias = (m.data_vencimento - hoje).days %}
-                        <span class="badge bg-warning text-dark">{{ dias }} {{ 'dia' if dias == 1 else 'dias' }}</span>
-                    </td>
+                    <td><span class="badge bg-warning text-dark">{{ (m.data_vencimento - hoje).days }} dias</span></td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+    {% if aviso.pages > 1 %}
+    <div class="card-footer">
+        <nav class="d-flex justify-content-between align-items-center">
+            <small class="text-muted">Mostrando {{ ((aviso.page-1)*10)+1 }}-{{ [aviso.page*10, aviso.total]|min }} de {{ aviso.total }}</small>
+            <ul class="pagination pagination-sm mb-0">
+                {% for p in range(1, aviso.pages + 1) %}
+                <li class="page-item {{ 'active' if p == aviso.page }}"><a class="page-link" href="?q={{ q }}&page_fat={{ request.args.get('page_fat',1) }}&page_inad={{ request.args.get('page_inad',1) }}&page_est={{ request.args.get('page_est',1) }}&page_aviso={{ p }}&page_perfil={{ request.args.get('page_perfil',1) }}">{{ p }}</a></li>
+                {% endfor %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
 </div>
 {% endif %}
 
 <!-- PERFIL DE PAGAMENTO -->
-{% if perfis %}
+{% if perfil.total > 0 %}
 <div class="card mb-4">
-    <div class="card-header">
-        <i class="bi bi-person-check"></i> <strong>Perfil de Pagamento dos Alunos</strong>
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-person-check"></i> <strong>Perfil de Pagamento</strong></span>
+        <span class="badge bg-secondary">{{ perfil.total }} aluno{{ 's' if perfil.total != 1 }}</span>
     </div>
     <div class="table-responsive">
         <table class="table table-hover mb-0">
             <thead class="table-dark">
-                <tr>
-                    <th>Aluno</th>
-                    <th>Media Dias Atraso</th>
-                    <th>Tendencia</th>
-                    <th>Total Pagamentos</th>
-                </tr>
+                <tr><th>Aluno</th><th>Media Atraso</th><th>Tendencia</th><th>Pagamentos</th></tr>
             </thead>
             <tbody>
-                {% for p in perfis %}
+                {% for p in perfil.lista %}
                 <tr>
                     <td><strong>{{ p.aluno }}</strong></td>
-                    <td>
-                        {% if p.dias_medio <= 0 %}
-                            <span class="badge bg-success">No dia</span>
-                        {% elif p.dias_medio <= 3 %}
-                            <span class="badge bg-warning text-dark">{{ p.dias_medio }} dias</span>
-                        {% else %}
-                            <span class="badge bg-danger">{{ p.dias_medio }} dias</span>
-                        {% endif %}
-                    </td>
+                    <td><span class="badge bg-{{ 'success' if p.dias_medio <= 0 else 'warning' if p.dias_medio <= 3 else 'danger' }}">{{ p.dias_medio }} dias</span></td>
                     <td>{{ p.tendencia }}</td>
                     <td>{{ p.total_pagamentos }}</td>
                 </tr>
@@ -267,13 +273,24 @@
             </tbody>
         </table>
     </div>
+    {% if perfil.pages > 1 %}
+    <div class="card-footer">
+        <nav class="d-flex justify-content-between align-items-center">
+            <small class="text-muted">Mostrando {{ ((perfil.page-1)*10)+1 }}-{{ [perfil.page*10, perfil.total]|min }} de {{ perfil.total }}</small>
+            <ul class="pagination pagination-sm mb-0">
+                {% for p in range(1, perfil.pages + 1) %}
+                <li class="page-item {{ 'active' if p == perfil.page }}"><a class="page-link" href="?q={{ q }}&page_fat={{ request.args.get('page_fat',1) }}&page_inad={{ request.args.get('page_inad',1) }}&page_est={{ request.args.get('page_est',1) }}&page_aviso={{ request.args.get('page_aviso',1) }}&page_perfil={{ p }}">{{ p }}</a></li>
+                {% endfor %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
 </div>
 {% endif %}
 {% endblock %}
 
 {% block scripts %}
 <script>
-    // Grafico de Barras - Faturamento Mensal
     const ctxBar = document.getElementById('graficoFaturamento').getContext('2d');
     new Chart(ctxBar, {
         type: 'bar',
@@ -290,24 +307,14 @@
         },
         options: {
             responsive: true,
-            plugins: {
-                legend: { labels: { color: '#e8e8f0' } }
-            },
+            plugins: { legend: { labels: { color: '#e8e8f0' } } },
             scales: {
-                y: { 
-                    beginAtZero: true,
-                    ticks: { color: '#8888a0' },
-                    grid: { color: 'rgba(42, 42, 62, 0.5)' }
-                },
-                x: { 
-                    ticks: { color: '#8888a0' },
-                    grid: { color: 'rgba(42, 42, 62, 0.5)' }
-                }
+                y: { beginAtZero: true, ticks: { color: '#8888a0' }, grid: { color: 'rgba(42,42,62,0.5)' } },
+                x: { ticks: { color: '#8888a0' }, grid: { color: 'rgba(42,42,62,0.5)' } }
             }
         }
     });
 
-    // Grafico de Pizza - Status
     const ctxPie = document.getElementById('graficoStatus').getContext('2d');
     new Chart(ctxPie, {
         type: 'doughnut',
@@ -315,19 +322,14 @@
             labels: ['Pagas', 'Pendentes', 'Atrasadas'],
             datasets: [{
                 data: [{{ status_count.pagas }}, {{ status_count.pendentes }}, {{ status_count.atrasadas }}],
-                backgroundColor: ['rgba(0, 200, 83, 0.7)', 'rgba(255, 171, 0, 0.7)', 'rgba(255, 23, 68, 0.7)'],
+                backgroundColor: ['rgba(0,200,83,0.7)', 'rgba(255,171,0,0.7)', 'rgba(255,23,68,0.7)'],
                 borderColor: ['#00c853', '#ffab00', '#ff1744'],
                 borderWidth: 2,
             }]
         },
         options: {
             responsive: true,
-            plugins: {
-                legend: { 
-                    position: 'bottom',
-                    labels: { color: '#e8e8f0', padding: 15 }
-                }
-            }
+            plugins: { legend: { position: 'bottom', labels: { color: '#e8e8f0', padding: 15 } } }
         }
     });
 </script>

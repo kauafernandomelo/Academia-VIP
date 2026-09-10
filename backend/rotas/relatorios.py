@@ -1,7 +1,7 @@
 from datetime import date, timedelta
 from dateutil.relativedelta import relativedelta
 from io import BytesIO
-from flask import Blueprint, render_template, send_file, make_response
+from flask import Blueprint, render_template, send_file, make_response, request
 from flask_login import login_required
 from sqlalchemy import func
 from models import db, Aluno, Matricula, Mensalidade, Pagamento
@@ -195,11 +195,75 @@ def perfis_append(perfil):
 @relatorios_bp.route("/")
 @login_required
 def index():
+    q = request.args.get("q", "").strip()
+
     dados = _obterDadosRelatorios()
+
+    # Busca por nome/CPF em todas as tabelas
+    if q:
+        ql = q.lower()
+        dados["pagamentos_mes"] = [
+            p for p in dados["pagamentos_mes"]
+            if ql in p.mensalidade.matricula.aluno.nome.lower()
+            or q in p.mensalidade.matricula.aluno.cpf
+        ]
+        dados["mensalidades_atrasadas"] = [
+            m for m in dados["mensalidades_atrasadas"]
+            if ql in m.matricula.aluno.nome.lower()
+            or q in m.matricula.aluno.cpf
+        ]
+        dados["estimativas"] = [
+            e for e in dados["estimativas"]
+            if ql in e["aluno"].lower()
+        ]
+        dados["mensalidades_aviso"] = [
+            m for m in dados["mensalidades_aviso"]
+            if ql in m.matricula.aluno.nome.lower()
+            or q in m.matricula.aluno.cpf
+        ]
+        dados["perfis"] = [
+            p for p in dados["perfis"]
+            if ql in p["aluno"].lower()
+        ]
+
+    # Paginacao por tabela (10 por pagina)
+    page_fat = request.args.get("page_fat", 1, type=int)
+    page_inad = request.args.get("page_inad", 1, type=int)
+    page_est = request.args.get("page_est", 1, type=int)
+    page_aviso = request.args.get("page_aviso", 1, type=int)
+    page_perfil = request.args.get("page_perfil", 1, type=int)
+    per_page = 10
+
+    def paginar(lista, page):
+        total = len(lista)
+        start = (page - 1) * per_page
+        end = start + per_page
+        pages = max(1, (total + per_page - 1) // per_page)
+        return {
+            "lista": lista[start:end],
+            "page": min(page, pages),
+            "total": total,
+            "pages": pages,
+        }
+
     return render_template(
         "relatorios/index.html",
         meses=MESES,
-        **dados,
+        q=q,
+        fat=paginar(dados["pagamentos_mes"], page_fat),
+        inad=paginar(dados["mensalidades_atrasadas"], page_inad),
+        est=paginar(dados["estimativas"], page_est),
+        aviso=paginar(dados["mensalidades_aviso"], page_aviso),
+        perfil=paginar(dados["perfis"], page_perfil),
+        total_faturamento=dados["total_faturamento"],
+        total_inadimplencia=dados["total_inadimplencia"],
+        total_estimativa=dados["total_estimativa"],
+        faturamento_mensal=dados["faturamento_mensal"],
+        status_count=dados["status_count"],
+        mes_atual=dados["mes_atual"],
+        ano_atual=dados["ano_atual"],
+        proximo_mes=dados["proximo_mes"],
+        hoje=dados["hoje"],
     )
 
 
