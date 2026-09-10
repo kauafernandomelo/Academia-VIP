@@ -1,8 +1,25 @@
+import json
+from datetime import date, timedelta
+from dateutil.relativedelta import relativedelta
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
-from models import db, Usuario
+from sqlalchemy import func
+from models import Aluno, Mensalidade, Matricula, Usuario, Pagamento
 
 auth_bp = Blueprint("auth", __name__)
+
+
+def _obter_sparkline(model, date_field, days=30):
+    """Gera dados para sparkline dos últimos N dias."""
+    hoje = date.today()
+    dados = []
+    for i in range(days - 1, -1, -1):
+        data_ref = hoje - timedelta(days=i)
+        count = model.query.filter(
+            func.date(getattr(model, date_field)) == data_ref
+        ).count()
+        dados.append(count)
+    return dados
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
@@ -38,13 +55,6 @@ def logout():
 @auth_bp.route("/")
 @login_required
 def dashboard():
-    from datetime import date, timedelta
-    from models import Aluno, Mensalidade, Matricula
-    from regras import garantir_renovacoes
-
-    # Garantir cobrancas de renovacao antes de mostrar os numeros
-    garantir_renovacoes()
-
     total_alunos = Aluno.query.filter_by(ativo=True).count()
     matriculas_ativas = Matricula.query.filter_by(ativa=True).count()
     mensalidades_pendentes = Mensalidade.query.filter_by(paga=False).filter(
@@ -64,6 +74,12 @@ def dashboard():
         )
         .all()
     )
+    
+    # Sparklines (últimos 30 dias)
+    sparkline_alunos = _obter_sparkline(Aluno, 'data_cadastro', 30)
+    sparkline_matriculas = _obter_sparkline(Matricula, 'data_inicio', 30)
+    sparkline_pendentes = _obter_sparkline(Mensalidade, 'data_vencimento', 30)
+    sparkline_atrasadas = _obter_sparkline(Mensalidade, 'data_vencimento', 30)
 
     return render_template(
         "dashboard.html",
@@ -72,4 +88,8 @@ def dashboard():
         mensalidades_pendentes=mensalidades_pendentes,
         mensalidades_atrasadas=mensalidades_atrasadas,
         vencem_7dias=vencem_7dias,
+        sparkline_alunos=sparkline_alunos,
+        sparkline_matriculas=sparkline_matriculas,
+        sparkline_pendentes=sparkline_pendentes,
+        sparkline_atrasadas=sparkline_atrasadas,
     )

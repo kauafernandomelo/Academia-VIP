@@ -1,204 +1,20 @@
-from datetime import date, timedelta
-from dateutil.relativedelta import relativedelta
+from datetime import date
 from io import BytesIO
-from flask import Blueprint, render_template, send_file, make_response, request
+from flask import Blueprint, render_template, make_response, request
 from flask_login import login_required
-from sqlalchemy import func
-from models import db, Aluno, Matricula, Mensalidade, Pagamento
-from regras import garantir_renovacoes
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
+from openpyxl.chart import BarChart, PieChart, Reference
+
+from services.relatorios_service import (
+    obter_dados_relatorios,
+    filtrar_dados_por_busca,
+    paginar,
+    MESES,
+)
 
 relatorios_bp = Blueprint("relatorios", __name__)
-
-MESES = [
-    "", "Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho",
-    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
-]
-
-
-def _calcularPerfilPagamento(aluno):
-    pagamentos = (
-        db.session.query(Pagamento)
-        .join(Mensalidade)
-        .join(Matricula)
-        .filter(Matricula.aluno_id == aluno.id, Pagamento.data_pagamento.isnot(None))
-        .all()
-    )
-    if not pagamentos:
-        return {"dias_medio": 0, "tendencia": "Sem dados", "status": "sem_dados", "total_pagamentos": 0}
-
-    dias_atraso = []
-    for p in pagamentos:
-        if p.mensalidade and p.data_pagamento and p.mensalidade.data_vencimento:
-            delta = (p.data_pagamento - p.mensalidade.data_vencimento).days
-            dias_atraso.append(delta)
-
-    if not dias_atraso:
-        return {"dias_medio": 0, "tendencia": "Sem dados", "status": "sem_dados", "total_pagamentos": len(pagamentos)}
-
-    media = sum(dias_atraso) / len(dias_atraso)
-
-    if media <= 0:
-        status = "pontual"
-        tendencia = "✅ Pontual"
-    elif media <= 3:
-        status = "levemente_atrasado"
-        tendencia = "⚠️ Levemente atrasado"
-    else:
-        status = "sempre_atrasado"
-        tendencia = "🔴 Sempre atrasado"
-
-    return {
-        "dias_medio": round(media, 1),
-        "tendencia": tendencia,
-        "status": status,
-        "total_pagamentos": len(pagamentos),
-    }
-
-
-def _obterDadosRelatorios():
-    hoje = date.today()
-    mes_atual = hoje.month
-    ano_atual = hoje.year
-    proximo_mes = hoje + relativedelta(months=1)
-
-    # Garantir cobrancas de renovacao para aparecerem nos relatorios
-    garantir_renovacoes(hoje)
-
-    # 1. FATURAMENTO DO MES ATUAL
-    pagamentos_mes = (
-        db.session.query(Pagamento)
-        .join(Mensalidade)
-        .filter(
-            func.extract("month", Pagamento.data_pagamento) == mes_atual,
-            func.extract("year", Pagamento.data_pagamento) == ano_atual,
-        )
-        .all()
-    )
-    total_faturamento = sum(float(p.valor_pago) for p in pagamentos_mes)
-
-    # 2. INADIMPLENCIA
-    mensalidades_atrasadas = (
-        Mensalidade.query.filter_by(paga=False)
-        .filter(Mensalidade.data_vencimento < hoje)
-        .order_by(Mensalidade.data_vencimento)
-        .all()
-    )
-    total_inadimplencia = sum(float(m.valor) for m in mensalidades_atrasadas)
-
-    # 3. ESTIMATIVA PROXIMO MES - apenas cobrancas reais pendentes + planos mensais
-    matriculas_ativas = Matricula.query.filter_by(ativa=True).all()
-    estimativas = []
-    for mat in matriculas_ativas:
-        # Cobranca (renovacao ou mensalidade) pendente no proximo mes?
-        pendente_prox = None
-        for m in mat.mensalidades:
-            if (
-                not m.paga
-                and m.data_vencimento.month == proximo_mes.month
-                and m.data_vencimento.year == proximo_mes.year
-            ):
-                pendente_prox = m
-                break
-
-        if pendente_prox:
-            estimativas.append({
-                "aluno": mat.aluno.nome,
-                "plano": mat.plano.nome,
-                "valor": float(pendente_prox.valor),
-                "vencimento": pendente_prox.data_vencimento,
-                "status": "pendente",
-            })
-        elif mat.plano.duracao_meses == 1:
-            # Plano mensal: projeta a cobranca do proximo mes (se ainda nao existir)
-            estimativas.append({
-                "aluno": mat.aluno.nome,
-                "plano": mat.plano.nome,
-                "valor": float(mat.plano.valor),
-                "vencimento": hoje + relativedelta(months=1, day=mat.data_inicio.day),
-                "status": "estimado",
-            })
-        # else: planos integrais (trimestral/semestral/anual) ja pagos ate data_fim,
-        # sem cobranca de renovacao pendente -> nao entram na projecao
-
-    total_estimativa = sum(e["valor"] for e in estimativas)
-
-    # 4. ALUNOS COM AVISO (faltam 7 dias ou menos)
-    data_limite = hoje + timedelta(days=7)
-    mensalidades_aviso = (
-        Mensalidade.query.filter_by(paga=False)
-        .filter(
-            Mensalidade.data_vencimento >= hoje,
-            Mensalidade.data_vencimento <= data_limite,
-        )
-        .order_by(Mensalidade.data_vencimento)
-        .all()
-    )
-
-    # 5. PERFIL DE PAGAMENTO DOS ALUNOS
-    alunos_ativos = Aluno.query.filter_by(ativo=True).all()
-    perfis = []
-    for aluno in alunos_ativos:
-        perfil = _calcularPerfilPagamento(aluno)
-        if perfil["total_pagamentos"] > 0:
-            perfis.append({"aluno": aluno.nome, **perfis_append(perfil)})
-    perfis.sort(key=lambda x: x["dias_medio"], reverse=True)
-
-    # 6. DADOS PARA GRAFICOS
-    # Ultimos 6 meses de faturamento
-    faturamento_mensal = []
-    for i in range(5, -1, -1):
-        data_ref = hoje - relativedelta(months=i)
-        pagamentos = (
-            db.session.query(Pagamento)
-            .join(Mensalidade)
-            .filter(
-                func.extract("month", Pagamento.data_pagamento) == data_ref.month,
-                func.extract("year", Pagamento.data_pagamento) == data_ref.year,
-            )
-            .all()
-        )
-        total = sum(float(p.valor_pago) for p in pagamentos)
-        faturamento_mensal.append({"mes": MESES[data_ref.month], "valor": total})
-
-    # Status das mensalidades do mes atual
-    todas_mensalidades_mes = Mensalidade.query.filter(
-        func.extract("month", Mensalidade.data_vencimento) == mes_atual,
-        func.extract("year", Mensalidade.data_vencimento) == ano_atual,
-    ).all()
-    status_count = {"pagas": 0, "pendentes": 0, "atrasadas": 0}
-    for m in todas_mensalidades_mes:
-        if m.paga:
-            status_count["pagas"] += 1
-        elif m.esta_atrasada:
-            status_count["atrasadas"] += 1
-        else:
-            status_count["pendentes"] += 1
-
-    return {
-        "pagamentos_mes": pagamentos_mes,
-        "total_faturamento": total_faturamento,
-        "mensalidades_atrasadas": mensalidades_atrasadas,
-        "total_inadimplencia": total_inadimplencia,
-        "estimativas": estimativas,
-        "total_estimativa": total_estimativa,
-        "mensalidades_aviso": mensalidades_aviso,
-        "perfis": perfis,
-        "faturamento_mensal": faturamento_mensal,
-        "status_count": status_count,
-        "mes_atual": mes_atual,
-        "ano_atual": ano_atual,
-        "proximo_mes": proximo_mes,
-        "hoje": hoje,
-    }
-
-
-def perfis_append(perfil):
-    return {
-        "dias_medio": perfil["dias_medio"],
-        "tendencia": perfil["tendencia"],
-        "status": perfil["status"],
-        "total_pagamentos": perfil["total_pagamentos"],
-    }
 
 
 @relatorios_bp.route("/")
@@ -207,54 +23,15 @@ def index():
     q = request.args.get("q", "").strip()
     status_filtro = request.args.get("status", "todas")
 
-    dados = _obterDadosRelatorios()
+    dados = obter_dados_relatorios()
+    dados = filtrar_dados_por_busca(dados, q)
 
-    # Busca por nome/CPF em todas as tabelas
-    if q:
-        ql = q.lower()
-        dados["pagamentos_mes"] = [
-            p for p in dados["pagamentos_mes"]
-            if ql in p.mensalidade.matricula.aluno.nome.lower()
-            or q in p.mensalidade.matricula.aluno.cpf
-        ]
-        dados["mensalidades_atrasadas"] = [
-            m for m in dados["mensalidades_atrasadas"]
-            if ql in m.matricula.aluno.nome.lower()
-            or q in m.matricula.aluno.cpf
-        ]
-        dados["estimativas"] = [
-            e for e in dados["estimativas"]
-            if ql in e["aluno"].lower()
-        ]
-        dados["mensalidades_aviso"] = [
-            m for m in dados["mensalidades_aviso"]
-            if ql in m.matricula.aluno.nome.lower()
-            or q in m.matricula.aluno.cpf
-        ]
-        dados["perfis"] = [
-            p for p in dados["perfis"]
-            if ql in p["aluno"].lower()
-        ]
-
-    # Paginacao por tabela (10 por pagina)
+    # Paginação por tabela (10 por página)
     page_fat = request.args.get("page_fat", 1, type=int)
     page_inad = request.args.get("page_inad", 1, type=int)
     page_est = request.args.get("page_est", 1, type=int)
     page_aviso = request.args.get("page_aviso", 1, type=int)
     page_perfil = request.args.get("page_perfil", 1, type=int)
-    per_page = 10
-
-    def paginar(lista, page):
-        total = len(lista)
-        start = (page - 1) * per_page
-        end = start + per_page
-        pages = max(1, (total + per_page - 1) // per_page)
-        return {
-            "lista": lista[start:end],
-            "page": min(page, pages),
-            "total": total,
-            "pages": pages,
-        }
 
     return render_template(
         "relatorios/index.html",
@@ -281,13 +58,14 @@ def index():
 @relatorios_bp.route("/pdf")
 @login_required
 def pdf():
-    dados = _obterDadosRelatorios()
+    from xhtml2pdf import pisa
+    
+    dados = obter_dados_relatorios()
     html = render_template(
         "relatorios/pdf.html",
         meses=MESES,
         **dados,
     )
-    from xhtml2pdf import pisa
     result = BytesIO()
     pdf = pisa.pisaDocument(html, result)
     if not pdf.err:
@@ -301,12 +79,7 @@ def pdf():
 @relatorios_bp.route("/excel")
 @login_required
 def excel():
-    from openpyxl import Workbook
-    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-    from openpyxl.utils import get_column_letter
-    from openpyxl.chart import BarChart, PieChart, Reference
-
-    dados = _obterDadosRelatorios()
+    dados = obter_dados_relatorios()
     wb = Workbook()
 
     header_font = Font(bold=True, color="FFFFFF")
@@ -465,7 +238,8 @@ def excel():
         barra.legend = None
         ws0.add_chart(barra, "D36")
 
-    # Resumo de numeros adicionais
+    # Resumo de números adicionais
+    from models import Aluno, Matricula
     pagamentos_mes = len(dados["pagamentos_mes"])
     ticket = dados["total_faturamento"] / pagamentos_mes if pagamentos_mes else 0
     row += 1

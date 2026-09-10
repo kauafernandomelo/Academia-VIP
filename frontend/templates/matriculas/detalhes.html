@@ -1,14 +1,15 @@
 {% extends "base.html" %}
+{% from 'macros/badges.html' import status_badge, mensalidade_status_badge, mensalidade_tipo_badge, mensalidade_dias_badge %}
 
-{% block titulo %}Matricula #{{ matricula.id }} - Academia VIP{% endblock %}
+{% block titulo %}Matrícula #{{ matricula.id }} - Academia VIP{% endblock %}
 
 {% block conteudo %}
 <div class="page-header mb-4">
-    <h2 class="mb-0"><i class="bi bi-clipboard-check"></i> Matricula #{{ matricula.id }}</h2>
+    <h2 class="mb-0"><i class="bi bi-clipboard-check"></i> Matrícula #{{ matricula.id }}</h2>
     <div class="d-flex gap-2">
         {% if matricula.ativa %}
         <form method="POST" action="{{ url_for('matriculas.encerrar', id=matricula.id) }}" class="d-inline"
-              onsubmit="return confirm('Deseja encerrar esta matricula?');">
+              data-confirm="Deseja encerrar esta matrícula? O aluno perderá o acesso e a matrícula não poderá ser reativada.">
             <button type="submit" class="btn btn-danger">
                 <i class="bi bi-x-circle"></i> Encerrar
             </button>
@@ -23,23 +24,14 @@
 <div class="row">
     <div class="col-md-6">
         <div class="card mb-4">
-            <div class="card-header"><i class="bi bi-info-circle"></i> <strong>Informacoes da Matricula</strong></div>
+            <div class="card-header"><i class="bi bi-info-circle"></i> <strong>Informações da Matrícula</strong></div>
             <div class="card-body">
                 <p><strong>Aluno:</strong> {{ matricula.aluno.nome }}</p>
                 <p><strong>Plano:</strong> {{ matricula.plano.nome }}</p>
-                <p><strong>Valor Mensal:</strong> R$ {{ "%.2f"|format(matricula.plano.valor) }}</p>
-                <p><strong>Data Inicio:</strong> {{ matricula.data_inicio.strftime('%d/%m/%Y') }}</p>
+                <p><strong>Valor do Plano:</strong> R$ {{ "%.2f"|format(matricula.plano.valor) }}</p>
+                <p><strong>Data Início:</strong> {{ matricula.data_inicio.strftime('%d/%m/%Y') }}</p>
                 <p><strong>Data Fim:</strong> {{ matricula.data_fim.strftime('%d/%m/%Y') }}</p>
-                <p>
-                    <strong>Status:</strong>
-                    {% if matricula.esta_vigente %}
-                    <span class="badge bg-success">Vigente</span>
-                    {% elif matricula.ativa %}
-                    <span class="badge bg-warning">Ativa</span>
-                    {% else %}
-                    <span class="badge bg-secondary">Encerrada</span>
-                    {% endif %}
-                </p>
+                <p><strong>Status:</strong> {{ status_badge(matricula) }}</p>
             </div>
         </div>
     </div>
@@ -53,29 +45,29 @@
                     <div class="list-group-item">
                         <div class="d-flex justify-content-between">
                             <span><strong>Vencimento:</strong> {{ mensal.data_vencimento.strftime('%d/%m/%Y') }}</span>
-                            {% if mensal.paga %}
-                            <span class="badge bg-success">Paga</span>
-                            {% elif mensal.esta_atrasada %}
-                            <span class="badge bg-danger">Atrasada</span>
-                            {% else %}
-                            <span class="badge bg-warning">Pendente</span>
-                            {% endif %}
+                            {{ mensalidade_status_badge(mensal) }}
                         </div>
+                        {{ mensalidade_tipo_badge(mensal) }}
                         <div class="d-flex justify-content-between mt-2">
                             <span>R$ {{ "%.2f"|format(mensal.valor) }}</span>
-                            {% if not mensal.paga %}
+                            {{ mensalidade_dias_badge(mensal) }}
+                        </div>
+                        {% if not mensal.paga %}
+                        <div class="d-flex justify-content-end mt-2">
                             <a href="{{ url_for('mensalidades.pagar', id=mensal.id) }}" class="btn btn-sm btn-success">
                                 <i class="bi bi-cash"></i> Registrar Pagamento
                             </a>
-                            {% endif %}
                         </div>
+                        {% endif %}
                     </div>
                     {% endfor %}
                 </div>
                 {% else %}
-                <div class="text-center py-3" style="color: var(--vip-text-muted);">
-                    <i class="bi bi-inbox display-4 d-block mb-2"></i>
-                    Nenhuma mensalidade encontrada.
+                <div class="text-center py-4">
+                    <div class="empty-state">
+                        <i class="bi bi-inbox display-1 d-block mb-3"></i>
+                        <h5>Nenhuma mensalidade encontrada</h5>
+                    </div>
                 </div>
                 {% endif %}
             </div>

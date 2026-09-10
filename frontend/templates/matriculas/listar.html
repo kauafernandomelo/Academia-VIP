@@ -1,12 +1,13 @@
 {% extends "base.html" %}
+{% from 'macros/badges.html' import status_badge %}
 
-{% block titulo %}Matriculas - Academia VIP{% endblock %}
+{% block titulo %}Matrículas - Academia VIP{% endblock %}
 
 {% block conteudo %}
 <div class="page-header mb-4">
-    <h2 class="mb-0"><i class="bi bi-clipboard-check"></i> Matriculas</h2>
+    <h2 class="mb-0"><i class="bi bi-clipboard-check"></i> Matrículas</h2>
     <a href="{{ url_for('matriculas.nova') }}" class="btn btn-primary">
-        <i class="bi bi-plus-lg"></i> Nova Matricula
+        <i class="bi bi-plus-lg"></i> Nova Matrícula
     </a>
 </div>
 
@@ -20,15 +21,15 @@
 
 <div class="card">
     <div class="table-responsive">
-        <table class="table table-hover mb-0">
+        <table class="table table-hover mb-0" data-sortable>
             <thead class="table-dark">
                 <tr>
-                    <th class="d-none-mobile">#</th>
-                    <th>Aluno</th>
-                    <th>Plano</th>
-                    <th class="d-none-mobile">Periodo</th>
-                    <th>Status</th>
-                    <th>Acoes</th>
+                    <th class="d-none-mobile" data-sort="number">#</th>
+                    <th data-sort="string">Aluno</th>
+                    <th data-sort="string">Plano</th>
+                    <th class="d-none-mobile" data-sort="date">Período</th>
+                    <th data-sort="string">Status</th>
+                    <th>Ações</th>
                 </tr>
             </thead>
             <tbody>
@@ -40,26 +41,24 @@
                     <td class="d-none-mobile">
                         {{ mat.data_inicio.strftime('%d/%m/%Y') }} - {{ mat.data_fim.strftime('%d/%m/%Y') }}
                     </td>
+                    <td>{{ status_badge(mat) }}</td>
                     <td>
-                        {% if mat.esta_vigente %}
-                        <span class="badge bg-success">Vigente</span>
-                        {% elif mat.ativa %}
-                        <span class="badge bg-warning">Ativa</span>
-                        {% else %}
-                        <span class="badge bg-secondary">Encerrada</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <a href="{{ url_for('matriculas.detalhes', id=mat.id) }}" class="btn btn-sm btn-info">
+                        <a href="{{ url_for('matriculas.detalhes', id=mat.id) }}" class="btn btn-sm btn-info" title="Ver detalhes">
                             <i class="bi bi-eye"></i>
                         </a>
                     </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="6" class="text-center py-4" style="color: var(--vip-text-muted);">
-                        <i class="bi bi-inbox display-4 d-block mb-2"></i>
-                        Nenhuma matricula encontrada.
+                    <td colspan="6" class="text-center py-5">
+                        <div class="empty-state">
+                            <i class="bi bi-clipboard-x display-1 d-block mb-3"></i>
+                            <h5>Nenhuma matrícula encontrada</h5>
+                            <p class="text-muted">Cadastre a primeira matrícula para começar</p>
+                            <a href="{{ url_for('matriculas.nova') }}" class="btn btn-primary mt-2">
+                                <i class="bi bi-plus-lg"></i> Nova Matrícula
+                            </a>
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}

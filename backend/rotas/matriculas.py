@@ -36,13 +36,55 @@ def listar():
 @login_required
 def nova():
     if request.method == "POST":
-        aluno_id = int(request.form["aluno_id"])
-        plano_id = int(request.form["plano_id"])
-        data_inicio = date.fromisoformat(request.form["data_inicio"])
+        aluno_id = request.form.get("aluno_id", type=int)
+        plano_id = request.form.get("plano_id", type=int)
+        data_inicio_str = request.form.get("data_inicio", "").strip()
         forma_pagamento = request.form.get("forma_pagamento", "pix").strip()
-
+        
+        erros = []
+        if not aluno_id:
+            erros.append("Aluno é obrigatório.")
+        if not plano_id:
+            erros.append("Plano é obrigatório.")
+        if not data_inicio_str:
+            erros.append("Data de início é obrigatória.")
+        
+        if erros:
+            for erro in erros:
+                flash(erro, "danger")
+            alunos = Aluno.query.filter_by(ativo=True).order_by(Aluno.nome).all()
+            planos = Plano.query.filter_by(ativo=True).order_by(Plano.nome).all()
+            return render_template("matriculas/form.html", alunos=alunos, planos=planos, matricula=None, hoje=date.today().isoformat()), 400
+        
+        try:
+            data_inicio = date.fromisoformat(data_inicio_str)
+        except ValueError:
+            flash("Data de início inválida.", "danger")
+            alunos = Aluno.query.filter_by(ativo=True).order_by(Aluno.nome).all()
+            planos = Plano.query.filter_by(ativo=True).order_by(Plano.nome).all()
+            return render_template("matriculas/form.html", alunos=alunos, planos=planos, matricula=None, hoje=date.today().isoformat()), 400
+        
+        aluno = Aluno.query.get_or_404(aluno_id)
+        if not aluno.ativo:
+            flash("Aluno está inativo. Ative o aluno antes de matricular.", "danger")
+            alunos = Aluno.query.filter_by(ativo=True).order_by(Aluno.nome).all()
+            planos = Plano.query.filter_by(ativo=True).order_by(Plano.nome).all()
+            return render_template("matriculas/form.html", alunos=alunos, planos=planos, matricula=None, hoje=date.today().isoformat()), 400
+        
         plano = Plano.query.get_or_404(plano_id)
+        if not plano.ativo:
+            flash("Plano está inativo.", "danger")
+            alunos = Aluno.query.filter_by(ativo=True).order_by(Aluno.nome).all()
+            planos = Plano.query.filter_by(ativo=True).order_by(Plano.nome).all()
+            return render_template("matriculas/form.html", alunos=alunos, planos=planos, matricula=None, hoje=date.today().isoformat()), 400
+        
         data_fim = data_inicio + relativedelta(months=plano.duracao_meses)
+        
+        if data_inicio > data_fim:
+            flash("Data de início não pode ser posterior à data de fim.", "danger")
+            alunos = Aluno.query.filter_by(ativo=True).order_by(Aluno.nome).all()
+            planos = Plano.query.filter_by(ativo=True).order_by(Plano.nome).all()
+            return render_template("matriculas/form.html", alunos=alunos, planos=planos, matricula=None, hoje=date.today().isoformat()), 400
 
         matricula = Matricula(
             aluno_id=aluno_id,

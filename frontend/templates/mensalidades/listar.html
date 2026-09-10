@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from 'macros/badges.html' import mensalidade_status_badge, mensalidade_tipo_badge, mensalidade_dias_badge %}
 
 {% block titulo %}Mensalidades - Academia VIP{% endblock %}
 
@@ -49,38 +50,15 @@
                         <h6 class="mb-0">{{ mensal.matricula.aluno.nome }}</h6>
                         <small style="color: var(--vip-text-muted);">CPF: {{ mensal.matricula.aluno.cpf }}</small>
                     </div>
-                    {% if mensal.paga %}
-                        <span class="badge bg-success">Paga</span>
-                    {% elif mensal.esta_atrasada %}
-                        <span class="badge bg-danger">Atrasada</span>
-                    {% else %}
-                        <span class="badge bg-warning">Pendente</span>
-                    {% endif %}
+                    {{ mensalidade_status_badge(mensal) }}
                 </div>
-                {% set renova = not mensal.paga and mensal.data_vencimento >= mensal.matricula.data_fim %}
-                {% set integral = mensal.paga and mensal.valor == mensal.matricula.plano.valor and mensal.data_vencimento == mensal.matricula.data_inicio %}
-                {% if renova %}
-                <span class="badge bg-info">Renovacao do plano</span>
-                {% elif integral %}
-                <span class="badge bg-secondary">Pagamento integral</span>
-                {% endif %}
+                {{ mensalidade_tipo_badge(mensal) }}
                 <hr class="my-2" style="border-color: var(--vip-border);">
                 <p class="mb-1"><strong>Plano:</strong> {{ mensal.matricula.plano.nome }}</p>
                 <p class="mb-1"><strong>Vencimento:</strong> {{ mensal.data_vencimento.strftime('%d/%m/%Y') }}</p>
                 <p class="mb-2"><strong>Valor:</strong> R$ {{ "%.2f"|format(mensal.valor) }}</p>
                 {% if not mensal.paga %}
-                    {% set dias = mensal.dias_restantes %}
-                    {% if dias is not none %}
-                        {% if dias < 0 %}
-                            <span class="badge bg-danger">Atrasado ha {{ dias|abs }} dias</span>
-                        {% elif dias == 0 %}
-                            <span class="badge bg-warning text-dark">Vence hoje</span>
-                        {% elif dias <= 7 %}
-                            <span class="badge bg-warning text-dark">Falta {{ dias }} dias</span>
-                        {% else %}
-                            <span class="badge bg-success">Falta {{ dias }} dias</span>
-                        {% endif %}
-                    {% endif %}
+                    {{ mensalidade_dias_badge(mensal) }}
                 {% endif %}
             </div>
             {% if not mensal.paga %}
@@ -95,9 +73,12 @@
     {% else %}
     <div class="col-12">
         <div class="card">
-            <div class="card-body text-center py-5" style="color: var(--vip-text-muted);">
-                <i class="bi bi-inbox display-4 d-block mb-2"></i>
-                Nenhuma mensalidade encontrada.
+            <div class="card-body text-center py-5">
+                <div class="empty-state">
+                    <i class="bi bi-inbox display-1 d-block mb-3"></i>
+                    <h5>Nenhuma mensalidade encontrada</h5>
+                    <p class="text-muted">Tente ajustar os filtros ou buscar por outro termo</p>
+                </div>
             </div>
         </div>
     </div>

@@ -1,0 +1,112 @@
+{# =============================================
+   MACROS DE BADGES - Academia VIP
+   Uso: {% from 'macros/badges.html' import status_badge, vencimento_badge, aluno_status_badge %}
+   ============================================= #}
+
+{% macro status_badge(matricula) -%}
+    {# Retorna badge de status da matrícula (vigente/ativa/encerrada/sem_plano) #}
+    {% if matricula.esta_vigente %}
+        <span class="badge bg-success" title="Matrícula vigente até {{ matricula.data_fim.strftime('%d/%m/%Y') }}">Vigente</span>
+    {% elif matricula.ativa %}
+        <span class="badge bg-warning text-dark" title="Matrícula ativa mas fora do período">Ativa</span>
+    {% else %}
+        <span class="badge bg-secondary" title="Matrícula encerrada">Encerrada</span>
+    {% endif %}
+{%- endmacro %}
+
+{% macro vencimento_badge(matricula) -%}
+    {# Retorna badge com dias restantes até vencimento/expiração #}
+    {% set dias = matricula.dias_restantes %}
+    {% if dias is not none %}
+        {% if dias < 0 %}
+            <span class="badge bg-danger" title="Atrasado há {{ dias|abs }} dia{{ 's' if dias|abs != 1 }}">Atrasado há {{ dias|abs }} dia{{ 's' if dias|abs != 1 }}</span>
+        {% elif dias == 0 %}
+            <span class="badge bg-warning text-dark" title="Vence hoje">Vence hoje</span>
+        {% elif dias <= 7 %}
+            <span class="badge bg-warning text-dark" title="Falta{{ 'm' if dias == 1 else '' }} {{ dias }} dia{{ 's' if dias != 1 }}">Falta{{ 'm' if dias == 1 else '' }} {{ dias }} dia{{ 's' if dias != 1 }}</span>
+        {% else %}
+            <span class="badge bg-success" title="Faltam {{ dias }} dias">Faltam {{ dias }} dias</span>
+        {% endif %}
+    {% else %}
+        <span class="badge bg-secondary" title="Paga ou sem cobrança pendente">Paga</span>
+    {% endif %}
+{%- endmacro %}
+
+{% macro mensalidade_status_badge(mensalidade) -%}
+    {# Retorna badge de status da mensalidade (paga/pendente/atrasada/estimada) #}
+    {% if mensalidade.paga %}
+        <span class="badge bg-success" title="Paga em {{ mensalidade.data_pagamento.strftime('%d/%m/%Y') if mensalidade.data_pagamento else 'data não informada' }}">Paga</span>
+    {% elif mensalidade.esta_atrasada %}
+        <span class="badge bg-danger" title="Atrasada desde {{ mensalidade.data_vencimento.strftime('%d/%m/%Y') }}">Atrasada</span>
+    {% else %}
+        <span class="badge bg-warning" title="Pendente - vence em {{ mensalidade.data_vencimento.strftime('%d/%m/%Y') }}">Pendente</span>
+    {% endif %}
+{%- endmacro %}
+
+{% macro mensalidade_tipo_badge(mensalidade) -#}
+    {# Retorna badge indicando se é renovação ou pagamento integral #}
+    {% set renova = not mensalidade.paga and mensalidade.data_vencimento >= mensalidade.matricula.data_fim %}
+    {% set integral = mensalidade.paga and mensalidade.valor == mensalidade.matricula.plano.valor and mensalidade.data_vencimento == mensalidade.matricula.data_inicio %}
+    {% if renova %}
+        <span class="badge bg-info" title="Cobrança de renovação do plano">Renovação</span>
+    {% elif integral %}
+        <span class="badge bg-secondary" title="Pagamento integral do plano no ato da matrícula">Integral</span>
+    {% endif %}
+{%- endmacro %}
+
+{% macro mensalidade_dias_badge(mensalidade) -#}
+    {# Retorna badge com dias restantes da mensalidade #}
+    {% set dias = mensalidade.dias_restantes %}
+    {% if dias is not none %}
+        {% if dias < 0 %}
+            <span class="badge bg-danger" title="Atrasada há {{ dias|abs }} dia{{ 's' if dias|abs != 1 }}">Atrasada há {{ dias|abs }} dia{{ 's' if dias|abs != 1 }}</span>
+        {% elif dias == 0 %}
+            <span class="badge bg-warning text-dark" title="Vence hoje">Vence hoje</span>
+        {% elif dias <= 7 %}
+            <span class="badge bg-warning text-dark" title="Faltam {{ dias }} dias">Faltam {{ dias }} dias</span>
+        {% else %}
+            <span class="badge bg-success" title="Faltam {{ dias }} dias">Faltam {{ dias }} dias</span>
+        {% endif %}
+    {% endif %}
+{%- endmacro %}
+
+{% macro aluno_status_badge(aluno) -#}
+    {# Retorna badge de status do aluno (ativo/inativo) #}
+    {% if aluno.ativo %}
+        <span class="badge bg-success" title="Aluno ativo">Ativo</span>
+    {% else %}
+        <span class="badge bg-secondary" title="Aluno inativo">Inativo</span>
+    {% endif %}
+{%- endmacro %}
+
+{% macro plano_status_badge(plano) -#}
+    {# Retorna badge de status do plano (ativo/inativo) #}
+    {% if plano.ativo %}
+        <span class="badge bg-success" title="Plano ativo para novas matrículas">Ativo</span>
+    {% else %}
+        <span class="badge bg-secondary" title="Plano inativo">Inativo</span>
+    {% endif %}
+{%- endmacro %}
+
+{% macro forma_pagamento_badge(forma) -#}
+    {# Retorna label formatado da forma de pagamento #}
+    {% set labels = {
+        'dinheiro': 'Dinheiro',
+        'pix': 'PIX',
+        'cartao_credito': 'Cartão de Crédito',
+        'cartao_debito': 'Cartão de Débito',
+        'boleto': 'Boleto',
+    } %}
+    <span class="badge bg-light text-dark">{{ labels.get(forma, forma.replace('_', ' ').title()) }}</span>
+{%- endmacro %}
+
+{% macro perfil_tendencia_badge(dias_medio) -#}
+    {# Retorna badge colorido baseado na média de dias de atraso #}
+    {% if dias_medio <= 0 %}
+        <span class="badge bg-success" title="Paga em dia ou antecipado">{{ dias_medio }} dia{{ 's' if dias_medio != 1 }}</span>
+    {% elif dias_medio <= 3 %}
+        <span class="badge bg-warning text-dark" title="Levemente atrasado">{{ dias_medio }} dia{{ 's' if dias_medio != 1 }}</span>
+    {% else %}
+        <span class="badge bg-danger" title="Sempre atrasado">{{ dias_medio }} dia{{ 's' if dias_medio != 1 }}</span>
+    {% endif %}
+{%- endmacro %}

@@ -2,7 +2,7 @@ from datetime import date
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required
 from models import db, Mensalidade, Pagamento, Aluno
-from regras import garantir_renovacoes, aplicar_pagamento
+from regras import aplicar_pagamento
 
 mensalidades_bp = Blueprint("mensalidades", __name__)
 
@@ -13,9 +13,6 @@ def listar():
     page = request.args.get("page", 1, type=int)
     status = request.args.get("status", "todas")
     q = request.args.get("q", "").strip()
-
-    # Garantir cobrancas de renovacao antes de listar
-    garantir_renovacoes()
 
     query = Mensalidade.query.join(Mensalidade.matricula).join(Aluno)
 
@@ -45,21 +42,50 @@ def listar():
     )
 
 
+def validar_valor_pago(valor_str, valor_mensalidade):
+    """Valida valor pago (não pode ser negativo nem muito maior que o valor da mensalidade)."""
+    try:
+        valor = float(valor_str.replace(',', '.'))
+        if valor <= 0:
+            return None
+        # Permite até 1 centavo de diferença para arredondamento
+        if valor > float(valor_mensalidade) + 0.01:
+            return None
+        return valor
+    except (ValueError, AttributeError):
+        return None
+
+
 @mensalidades_bp.route("/<int:id>/pagar", methods=["GET", "POST"])
 @login_required
 def pagar(id):
     mensalidade = Mensalidade.query.get_or_404(id)
 
     if mensalidade.paga:
-        flash("Esta mensalidade ja foi paga.", "info")
+        flash("Esta mensalidade já foi paga.", "info")
         return redirect(url_for("mensalidades.listar"))
 
     if request.method == "POST":
+        valor_pago = validar_valor_pago(request.form.get("valor_pago", ""), mensalidade.valor)
+        forma_pagamento = request.form.get("forma_pagamento", "").strip()
+        observacao = request.form.get("observacao", "").strip() or None
+        
+        erros = []
+        if valor_pago is None:
+            erros.append(f"Valor inválido. Deve ser entre 0.01 e {float(mensalidade.valor) + 0.01:.2f}.")
+        if not forma_pagamento:
+            erros.append("Forma de pagamento é obrigatória.")
+        
+        if erros:
+            for erro in erros:
+                flash(erro, "danger")
+            return render_template("mensalidades/pagar.html", mensalidade=mensalidade), 400
+        
         aplicar_pagamento(
             mensalidade,
-            valor_pago=float(request.form["valor_pago"]),
-            forma_pagamento=request.form["forma_pagamento"],
-            observacao=request.form.get("observacao", "").strip() or None,
+            valor_pago=valor_pago,
+            forma_pagamento=forma_pagamento,
+            observacao=observacao,
         )
         db.session.commit()
 

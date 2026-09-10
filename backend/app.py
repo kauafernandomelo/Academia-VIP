@@ -1,8 +1,10 @@
 import os
+from datetime import date
 from flask import Flask
 from flask_login import LoginManager
 from config import config
 from models import db, Usuario
+from regras import garantir_renovacoes
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FRONTEND_DIR = os.path.join(BASE_DIR, "..", "frontend")
@@ -27,6 +29,12 @@ def criar_app(config_name="default"):
     @login_manager.user_loader
     def carregar_usuario(usuario_id):
         return Usuario.query.get(int(usuario_id))
+
+    # Context processor: garante renovacoes uma unica vez por request
+    @app.context_processor
+    def inject_renovacoes():
+        garantir_renovacoes(date.today())
+        return {}
 
     from rotas import registrar_blueprints
 

@@ -45,6 +45,7 @@
                     <div>
                         <div class="stat-value">{{ total_alunos }}</div>
                         <div class="stat-label">Alunos Ativos</div>
+                        <canvas class="sparkline mt-2" width="120" height="30" data-values="{{ sparkline_alunos|tojson }}"></canvas>
                     </div>
                     <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
                 </div>
@@ -58,6 +59,7 @@
                     <div>
                         <div class="stat-value">{{ matriculas_ativas }}</div>
                         <div class="stat-label">Matriculas Ativas</div>
+                        <canvas class="sparkline mt-2" width="120" height="30" data-values="{{ sparkline_matriculas|tojson }}"></canvas>
                     </div>
                     <div class="stat-icon"><i class="bi bi-clipboard-check"></i></div>
                 </div>
@@ -71,6 +73,7 @@
                     <div>
                         <div class="stat-value">{{ mensalidades_pendentes }}</div>
                         <div class="stat-label">Pendentes</div>
+                        <canvas class="sparkline mt-2" width="120" height="30" data-values="{{ sparkline_pendentes|tojson }}"></canvas>
                     </div>
                     <div class="stat-icon"><i class="bi bi-clock-history"></i></div>
                 </div>
@@ -84,6 +87,7 @@
                     <div>
                         <div class="stat-value">{{ mensalidades_atrasadas }}</div>
                         <div class="stat-label">Em Atraso</div>
+                        <canvas class="sparkline mt-2" width="120" height="30" data-values="{{ sparkline_atrasadas|tojson }}"></canvas>
                     </div>
                     <div class="stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
                 </div>
@@ -133,4 +137,54 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Sparklines simples para stat-cards
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.sparkline').forEach(function(canvas) {
+        var values = JSON.parse(canvas.dataset.values || '[]');
+        if (!values.length) return;
+        
+        var ctx = canvas.getContext('2d');
+        var width = canvas.width;
+        var height = canvas.height;
+        var maxVal = Math.max(...values);
+        var minVal = Math.min(...values);
+        var range = maxVal - minVal || 1;
+        
+        // Área
+        ctx.beginPath();
+        ctx.moveTo(0, height - (values[0] - minVal) / range * height);
+        values.forEach(function(val, i) {
+            var x = (i / (values.length - 1)) * width;
+            var y = height - (val - minVal) / range * height;
+            ctx.lineTo(x, y);
+        });
+        ctx.lineTo(width, height);
+        ctx.lineTo(0, height);
+        ctx.closePath();
+        
+        var gradient = ctx.createLinearGradient(0, 0, 0, height);
+        var color = getComputedStyle(canvas).getPropertyValue('--vip-gold') || '#D4AF37';
+        gradient.addColorStop(0, color.replace(')', ', 0.15)').replace('rgb', 'rgba').replace('#', ''));
+        gradient.addColorStop(1, color.replace(')', ', 0)').replace('rgb', 'rgba').replace('#', ''));
+        ctx.fillStyle = gradient;
+        ctx.fill();
+        
+        // Linha
+        ctx.beginPath();
+        ctx.moveTo(0, height - (values[0] - minVal) / range * height);
+        values.forEach(function(val, i) {
+            var x = (i / (values.length - 1)) * width;
+            var y = height - (val - minVal) / range * height;
+            ctx.lineTo(x, y);
+        });
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    });
+});
+</script>
 {% endblock %}

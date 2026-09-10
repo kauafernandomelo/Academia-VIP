@@ -1,3 +1,4 @@
+import re
 from datetime import date, timedelta
 from dateutil.relativedelta import relativedelta
 from flask import Blueprint, render_template, redirect, url_for, flash, request
@@ -6,6 +7,32 @@ from models import db, Aluno, Plano, Matricula
 from regras import gerar_mensalidade_inicial
 
 alunos_bp = Blueprint("alunos", __name__)
+
+
+def validar_cpf(cpf):
+    """Valida CPF (formato e dígitos verificadores)."""
+    cpf = re.sub(r'[^0-9]', '', cpf)
+    if len(cpf) != 11 or cpf == cpf[0] * 11:
+        return False
+    for i in range(9, 11):
+        soma = sum(int(cpf[j]) * (i + 1 - j) for j in range(i))
+        digito = (soma * 10 % 11) % 10
+        if int(cpf[i]) != digito:
+            return False
+    return True
+
+
+def validar_email(email):
+    """Validação simples de email."""
+    if not email:
+        return True  # opcional
+    return bool(re.match(r'^[^@]+@[^@]+\.[^@]+$', email))
+
+
+def validar_telefone(telefone):
+    """Validação simples de telefone brasileiro."""
+    nums = re.sub(r'[^0-9]', '', telefone)
+    return len(nums) >= 10 and len(nums) <= 11
 
 
 @alunos_bp.route("/")
@@ -36,17 +63,31 @@ def listar():
 @login_required
 def novo():
     if request.method == "POST":
-        aluno = Aluno(
-            nome=request.form["nome"].strip(),
-            cpf=request.form["cpf"].strip(),
-            telefone=request.form["telefone"].strip(),
-        )
-
-        if Aluno.query.filter_by(cpf=aluno.cpf).first():
-            flash("Ja existe um aluno com este CPF.", "danger")
+        nome = request.form["nome"].strip()
+        cpf = request.form["cpf"].strip()
+        telefone = request.form["telefone"].strip()
+        
+        # Validações
+        erros = []
+        if not nome:
+            erros.append("Nome é obrigatório.")
+        if not validar_cpf(cpf):
+            erros.append("CPF inválido.")
+        if not validar_telefone(telefone):
+            erros.append("Telefone inválido. Use formato (00) 00000-0000.")
+        
+        if erros:
+            for erro in erros:
+                flash(erro, "danger")
             planos = Plano.query.filter_by(ativo=True).order_by(Plano.nome).all()
-            return render_template("alunos/form.html", aluno=aluno, edicao=False, planos=planos, hoje=date.today().isoformat())
-
+            return render_template("alunos/form.html", aluno=None, edicao=False, planos=planos, hoje=date.today().isoformat()), 400
+        
+        if Aluno.query.filter_by(cpf=cpf).first():
+            flash("Já existe um aluno com este CPF.", "danger")
+            planos = Plano.query.filter_by(ativo=True).order_by(Plano.nome).all()
+            return render_template("alunos/form.html", aluno=None, edicao=False, planos=planos, hoje=date.today().isoformat()), 400
+        
+        aluno = Aluno(nome=nome, cpf=cpf, telefone=telefone)
         db.session.add(aluno)
         db.session.flush()
 
@@ -91,9 +132,27 @@ def editar(id):
     aluno = Aluno.query.get_or_404(id)
 
     if request.method == "POST":
-        aluno.nome = request.form["nome"].strip()
-        aluno.telefone = request.form["telefone"].strip()
-        aluno.email = request.form.get("email", "").strip() or None
+        nome = request.form["nome"].strip()
+        telefone = request.form["telefone"].strip()
+        email = request.form.get("email", "").strip() or None
+        
+        # Validações
+        erros = []
+        if not nome:
+            erros.append("Nome é obrigatório.")
+        if not validar_telefone(telefone):
+            erros.append("Telefone inválido. Use formato (00) 00000-0000.")
+        if email and not validar_email(email):
+            erros.append("E-mail inválido.")
+        
+        if erros:
+            for erro in erros:
+                flash(erro, "danger")
+            return render_template("alunos/form.html", aluno=aluno, edicao=True), 400
+        
+        aluno.nome = nome
+        aluno.telefone = telefone
+        aluno.email = email
         aluno.data_nascimento = _parse_date(request.form.get("data_nascimento"))
         aluno.ativo = "ativo" in request.form
 

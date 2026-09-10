@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from 'macros/badges.html' import aluno_status_badge, vencimento_badge %}
 
 {% block titulo %}Alunos - Academia VIP{% endblock %}
 
@@ -20,15 +21,15 @@
 
 <div class="card">
     <div class="table-responsive">
-        <table class="table table-hover mb-0">
+        <table class="table table-hover mb-0" data-sortable>
             <thead class="table-dark">
                 <tr>
-                    <th>Nome</th>
-                    <th class="d-none-mobile">CPF</th>
-                    <th class="d-none-mobile">Telefone</th>
-                    <th>Status</th>
-                    <th>Vencimento</th>
-                    <th>Acoes</th>
+                    <th data-sort="string">Nome</th>
+                    <th class="d-none-mobile" data-sort="string">CPF</th>
+                    <th class="d-none-mobile" data-sort="string">Telefone</th>
+                    <th data-sort="string">Status</th>
+                    <th data-sort="number">Vencimento</th>
+                    <th>Ações</th>
                 </tr>
             </thead>
             <tbody>
@@ -37,43 +38,25 @@
                     <td><strong>{{ aluno.nome }}</strong></td>
                     <td class="d-none-mobile">{{ aluno.cpf }}</td>
                     <td class="d-none-mobile">{{ aluno.telefone }}</td>
-                    <td>
-                        {% if aluno.ativo %}
-                        <span class="badge bg-success">Ativo</span>
-                        {% else %}
-                        <span class="badge bg-secondary">Inativo</span>
-                        {% endif %}
-                    </td>
+                    <td>{{ aluno_status_badge(aluno) }}</td>
                     <td>
                         {% set mat = aluno.matriculas|selectattr('ativa')|first %}
                         {% if mat %}
-                            {% if mat.dias_restantes is not none %}
-                                {% if mat.dias_restantes < 0 %}
-                                    <span class="badge bg-danger">Atrasado ha {{ mat.dias_restantes|abs }} dias</span>
-                                {% elif mat.dias_restantes == 0 %}
-                                    <span class="badge bg-warning text-dark">Vence hoje</span>
-                                {% elif mat.dias_restantes <= 7 %}
-                                    <span class="badge bg-warning text-dark">Falta {{ mat.dias_restantes }} dias</span>
-                                {% else %}
-                                    <span class="badge bg-success">Falta {{ mat.dias_restantes }} dias</span>
-                                {% endif %}
-                            {% else %}
-                                <span class="badge bg-secondary">Paga</span>
-                            {% endif %}
+                            {{ vencimento_badge(mat) }}
                         {% else %}
-                            <span class="badge bg-secondary">Sem plano</span>
+                            <span class="badge bg-secondary" title="Sem matrícula ativa">Sem plano</span>
                         {% endif %}
                     </td>
                     <td>
-                        <a href="{{ url_for('alunos.detalhes', id=aluno.id) }}" class="btn btn-sm btn-info">
+                        <a href="{{ url_for('alunos.detalhes', id=aluno.id) }}" class="btn btn-sm btn-info" title="Ver detalhes">
                             <i class="bi bi-eye"></i>
                         </a>
-                        <a href="{{ url_for('alunos.editar', id=aluno.id) }}" class="btn btn-sm btn-warning">
+                        <a href="{{ url_for('alunos.editar', id=aluno.id) }}" class="btn btn-sm btn-warning" title="Editar">
                             <i class="bi bi-pencil"></i>
                         </a>
                         <form method="POST" action="{{ url_for('alunos.excluir', id=aluno.id) }}" class="d-inline"
                               onsubmit="return confirm('Tem certeza que deseja excluir {{ aluno.nome }}?');">
-                            <button type="submit" class="btn btn-sm btn-danger">
+                            <button type="submit" class="btn btn-sm btn-danger" title="Excluir">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </form>
@@ -81,9 +64,15 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="6" class="text-center py-4" style="color: var(--vip-text-muted);">
-                        <i class="bi bi-inbox display-4 d-block mb-2"></i>
-                        Nenhum aluno encontrado.
+                    <td colspan="6" class="text-center py-5">
+                        <div class="empty-state">
+                            <i class="bi bi-people display-1 d-block mb-3"></i>
+                            <h5>Nenhum aluno encontrado</h5>
+                            <p class="text-muted">Comece cadastrando seu primeiro aluno</p>
+                            <a href="{{ url_for('alunos.novo') }}" class="btn btn-primary mt-2">
+                                <i class="bi bi-person-plus-fill"></i> Cadastrar Aluno
+                            </a>
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}
