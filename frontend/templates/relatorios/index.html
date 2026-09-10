@@ -3,9 +3,19 @@
 {% block titulo %}Relatorio Geral - Academia VIP{% endblock %}
 
 {% block conteudo %}
-<h2 class="mb-4"><i class="bi bi-file-earmark-bar-graph"></i> Relatorio Geral - {{ meses[mes_atual] }}/{{ ano_atual }}</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-file-earmark-bar-graph"></i> Relatorio Geral - {{ meses[mes_atual] }}/{{ ano_atual }}</h2>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('relatorios.pdf') }}" class="btn btn-danger">
+            <i class="bi bi-file-earmark-pdf"></i> Baixar PDF
+        </a>
+        <a href="{{ url_for('relatorios.excel') }}" class="btn btn-success">
+            <i class="bi bi-file-earmark-excel"></i> Baixar Excel
+        </a>
+    </div>
+</div>
 
-<!-- FATURAMENTO DO MES -->
+<!-- STAT CARDS -->
 <div class="row g-4 mb-4">
     <div class="col-md-4">
         <div class="stat-card gold">
@@ -42,7 +52,27 @@
     </div>
 </div>
 
-<!-- TABELA: FATURAMENTO DO MES -->
+<!-- GRAFICOS -->
+<div class="row g-4 mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-bar-chart"></i> <strong>Faturamento - Ultimos 6 Meses</strong></div>
+            <div class="card-body">
+                <canvas id="graficoFaturamento" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-pie-chart"></i> <strong>Status Mensalidades</strong></div>
+            <div class="card-body">
+                <canvas id="graficoStatus" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- FATURAMENTO DO MES -->
 <div class="card mb-4">
     <div class="card-header">
         <i class="bi bi-check-circle-fill text-success"></i> <strong>Faturamento do Mes - {{ meses[mes_atual] }}</strong>
@@ -80,7 +110,7 @@
     </div>
 </div>
 
-<!-- TABELA: INADIMPLENCIA -->
+<!-- INADIMPLENCIA -->
 <div class="card mb-4">
     <div class="card-header">
         <i class="bi bi-exclamation-circle-fill text-danger"></i> <strong>Inadimplencia - Mensalidades em Atraso</strong>
@@ -121,7 +151,7 @@
     </div>
 </div>
 
-<!-- TABELA: ESTIMATIVA PROXIMO MES -->
+<!-- ESTIMATIVA PROXIMO MES -->
 <div class="card mb-4">
     <div class="card-header">
         <i class="bi bi-calendar-event"></i> <strong>Estimativa - {{ meses[proximo_mes.month] }}/{{ proximo_mes.year }}</strong>
@@ -134,21 +164,29 @@
                     <th>Plano</th>
                     <th>Valor</th>
                     <th>Vencimento</th>
+                    <th>Status</th>
                 </tr>
             </thead>
             <tbody>
-                {% for m in mensalidades_proximo_mes %}
+                {% for e in estimativas %}
                 <tr>
-                    <td><strong>{{ m.matricula.aluno.nome }}</strong></td>
-                    <td>{{ m.matricula.plano.nome }}</td>
-                    <td>R$ {{ "%.2f"|format(m.valor) }}</td>
-                    <td>{{ m.data_vencimento.strftime('%d/%m/%Y') }}</td>
+                    <td><strong>{{ e.aluno }}</strong></td>
+                    <td>{{ e.plano }}</td>
+                    <td>R$ {{ "%.2f"|format(e.valor) }}</td>
+                    <td>{{ e.vencimento.strftime('%d/%m/%Y') }}</td>
+                    <td>
+                        {% if e.status == 'estimado' %}
+                            <span class="badge bg-info">Estimado</span>
+                        {% else %}
+                            <span class="badge bg-warning">Pendente</span>
+                        {% endif %}
+                    </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="4" class="text-center py-4" style="color: var(--vip-text-muted);">
+                    <td colspan="5" class="text-center py-4" style="color: var(--vip-text-muted);">
                         <i class="bi bi-inbox display-4 d-block mb-2"></i>
-                        Nenhuma mensalidade pendente para o proximo mes.
+                        Nenhuma estimativa para o proximo mes.
                     </td>
                 </tr>
                 {% endfor %}
@@ -157,7 +195,7 @@
     </div>
 </div>
 
-<!-- TABELA: ALUNOS COM AVISO (7 DIAS) -->
+<!-- AVISO 7 DIAS -->
 {% if mensalidades_aviso %}
 <div class="card mb-4 border-warning">
     <div class="card-header bg-warning text-dark">
@@ -192,4 +230,105 @@
     </div>
 </div>
 {% endif %}
+
+<!-- PERFIL DE PAGAMENTO -->
+{% if perfis %}
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="bi bi-person-check"></i> <strong>Perfil de Pagamento dos Alunos</strong>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>Aluno</th>
+                    <th>Media Dias Atraso</th>
+                    <th>Tendencia</th>
+                    <th>Total Pagamentos</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in perfis %}
+                <tr>
+                    <td><strong>{{ p.aluno }}</strong></td>
+                    <td>
+                        {% if p.dias_medio <= 0 %}
+                            <span class="badge bg-success">No dia</span>
+                        {% elif p.dias_medio <= 3 %}
+                            <span class="badge bg-warning text-dark">{{ p.dias_medio }} dias</span>
+                        {% else %}
+                            <span class="badge bg-danger">{{ p.dias_medio }} dias</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ p.tendencia }}</td>
+                    <td>{{ p.total_pagamentos }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Grafico de Barras - Faturamento Mensal
+    const ctxBar = document.getElementById('graficoFaturamento').getContext('2d');
+    new Chart(ctxBar, {
+        type: 'bar',
+        data: {
+            labels: [{% for f in faturamento_mensal %}'{{ f.mes }}'{% if not loop.last %},{% endif %}{% endfor %}],
+            datasets: [{
+                label: 'Faturamento (R$)',
+                data: [{% for f in faturamento_mensal %}{{ f.valor }}{% if not loop.last %},{% endif %}{% endfor %}],
+                backgroundColor: 'rgba(212, 175, 55, 0.6)',
+                borderColor: '#D4AF37',
+                borderWidth: 2,
+                borderRadius: 8,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { labels: { color: '#e8e8f0' } }
+            },
+            scales: {
+                y: { 
+                    beginAtZero: true,
+                    ticks: { color: '#8888a0' },
+                    grid: { color: 'rgba(42, 42, 62, 0.5)' }
+                },
+                x: { 
+                    ticks: { color: '#8888a0' },
+                    grid: { color: 'rgba(42, 42, 62, 0.5)' }
+                }
+            }
+        }
+    });
+
+    // Grafico de Pizza - Status
+    const ctxPie = document.getElementById('graficoStatus').getContext('2d');
+    new Chart(ctxPie, {
+        type: 'doughnut',
+        data: {
+            labels: ['Pagas', 'Pendentes', 'Atrasadas'],
+            datasets: [{
+                data: [{{ status_count.pagas }}, {{ status_count.pendentes }}, {{ status_count.atrasadas }}],
+                backgroundColor: ['rgba(0, 200, 83, 0.7)', 'rgba(255, 171, 0, 0.7)', 'rgba(255, 23, 68, 0.7)'],
+                borderColor: ['#00c853', '#ffab00', '#ff1744'],
+                borderWidth: 2,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { 
+                    position: 'bottom',
+                    labels: { color: '#e8e8f0', padding: 15 }
+                }
+            }
+        }
+    });
+</script>
 {% endblock %}

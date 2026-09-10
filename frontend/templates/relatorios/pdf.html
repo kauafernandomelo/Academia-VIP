@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-BBR">
+<head>
+    <meta charset="UTF-8">
+    <title>Relatorio Academia VIP</title>
+    <style>
+        body { font-family: Helvetica, Arial, sans-serif; font-size: 11px; color: #333; margin: 20px; }
+        h1 { text-align: center; color: #1a1a2e; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; }
+        h2 { color: #1a1a2e; font-size: 14px; margin-top: 20px; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
+        .resumo { display: flex; justify-content: space-around; margin: 20px 0; }
+        .resumo-box { text-align: center; padding: 15px; border: 1px solid #ddd; border-radius: 8px; width: 30%; }
+        .resumo-valor { font-size: 18px; font-weight: bold; color: #1a1a2e; }
+        .resumo-label { font-size: 10px; color: #666; margin-top: 5px; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        th { background: #1a1a2e; color: white; padding: 8px; text-align: left; font-size: 10px; }
+        td { padding: 6px 8px; border-bottom: 1px solid #eee; font-size: 10px; }
+        tr:nth-child(even) { background: #f9f9f9; }
+        .total { font-weight: bold; background: #f0f0f0; }
+        .footer { text-align: center; margin-top: 30px; font-size: 9px; color: #999; border-top: 1px solid #ddd; padding-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>ACADEMIA VIP - RELATORIO GERAL</h1>
+    <p style="text-align: center; color: #666;">{{ meses[mes_atual] }}/{{ ano_atual }} | Gerado em: {{ hoje.strftime('%d/%m/%Y') }}</p>
+
+    <div class="resumo">
+        <div class="resumo-box">
+            <div class="resumo-valor">R$ {{ "%.2f"|format(total_faturamento) }}</div>
+            <div class="resumo-label">Faturamento do Mes</div>
+        </div>
+        <div class="resumo-box">
+            <div class="resumo-valor" style="color: #ff1744;">R$ {{ "%.2f"|format(total_inadimplencia) }}</div>
+            <div class="resumo-label">Inadimplencia</div>
+        </div>
+        <div class="resumo-box">
+            <div class="resumo-valor" style="color: #00c853;">R$ {{ "%.2f"|format(total_estimativa) }}</div>
+            <div class="resumo-label">Estimativa {{ meses[proximo_mes.month] }}</div>
+        </div>
+    </div>
+
+    <h2>Faturamento do Mes - {{ meses[mes_atual] }}</h2>
+    <table>
+        <tr><th>Data</th><th>Aluno</th><th>Plano</th><th>Valor</th><th>Forma</th></tr>
+        {% for p in pagamentos_mes %}
+        <tr>
+            <td>{{ p.data_pagamento.strftime('%d/%m/%Y') }}</td>
+            <td>{{ p.mensalidade.matricula.aluno.nome }}</td>
+            <td>{{ p.mensalidade.matricula.plano.nome }}</td>
+            <td>R$ {{ "%.2f"|format(p.valor_pago) }}</td>
+            <td>{{ p.forma_pagamento.replace('_', ' ').title() }}</td>
+        </tr>
+        {% endfor %}
+        <tr class="total"><td colspan="3">TOTAL</td><td>R$ {{ "%.2f"|format(total_faturamento) }}</td><td></td></tr>
+    </table>
+
+    <h2>Inadimplencia</h2>
+    <table>
+        <tr><th>Aluno</th><th>Plano</th><th>Valor</th><th>Vencimento</th><th>Dias Atraso</th></tr>
+        {% for m in mensalidades_atrasadas %}
+        <tr>
+            <td>{{ m.matricula.aluno.nome }}</td>
+            <td>{{ m.matricula.plano.nome }}</td>
+            <td>R$ {{ "%.2f"|format(m.valor) }}</td>
+            <td>{{ m.data_vencimento.strftime('%d/%m/%Y') }}</td>
+            <td>{{ (hoje - m.data_vencimento).days }} dias</td>
+        </tr>
+        {% endfor %}
+        <tr class="total"><td colspan="2">TOTAL</td><td>R$ {{ "%.2f"|format(total_inadimplencia) }}</td><td></td><td></td></tr>
+    </table>
+
+    <h2>Estimativa - {{ meses[proximo_mes.month] }}/{{ proximo_mes.year }}</h2>
+    <table>
+        <tr><th>Aluno</th><th>Plano</th><th>Valor</th><th>Vencimento</th><th>Status</th></tr>
+        {% for e in estimativas %}
+        <tr>
+            <td>{{ e.aluno }}</td>
+            <td>{{ e.plano }}</td>
+            <td>R$ {{ "%.2f"|format(e.valor) }}</td>
+            <td>{{ e.vencimento.strftime('%d/%m/%Y') }}</td>
+            <td>{{ 'Estimado' if e.status == 'estimado' else 'Pendente' }}</td>
+        </tr>
+        {% endfor %}
+        <tr class="total"><td colspan="2">TOTAL</td><td>R$ {{ "%.2f"|format(total_estimativa) }}</td><td></td><td></td></tr>
+    </table>
+
+    {% if perfis %}
+    <h2>Perfil de Pagamento</h2>
+    <table>
+        <tr><th>Aluno</th><th>Media Dias Atraso</th><th>Tendencia</th><th>Pagamentos</th></tr>
+        {% for p in perfis %}
+        <tr>
+            <td>{{ p.aluno }}</td>
+            <td>{{ p.dias_medio }} dias</td>
+            <td>{{ p.tendencia }}</td>
+            <td>{{ p.total_pagamentos }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% endif %}
+
+    <div class="footer">
+        Academia VIP - Sistema de Gerenciamento | Relatorio gerado automaticamente
+    </div>
+</body>
+</html>
