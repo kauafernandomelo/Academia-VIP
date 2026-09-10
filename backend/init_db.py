@@ -60,7 +60,7 @@ def gerar_telefone():
 
 
 def seed_alunos(planos):
-    if Aluno.query.count() > 0:
+    if Aluno.query.count() >= 50:
         print(f"Banco ja tem {Aluno.query.count()} alunos. Pulando seed.")
         return
 
