@@ -44,7 +44,7 @@ class Aluno(db.Model, TimestampMixin):
     data_cadastro = db.Column(db.Date, default=date.today, nullable=False)
     ativo = db.Column(db.Boolean, default=True, nullable=False)
 
-    matriculas = db.relationship("Matricula", backref="aluno", lazy=True)
+    matriculas = db.relationship("Matricula", backref="aluno", lazy=True, cascade="all, delete-orphan")
 
     @property
     def idade(self):
