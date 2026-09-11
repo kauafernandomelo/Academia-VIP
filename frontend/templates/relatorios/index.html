@@ -151,6 +151,7 @@
                         </tbody>
                     </table>
                 </div>
+                {% include 'relatorios/partials/_pagination_fat.html' %}
             </div>
         </div>
     </div>
@@ -178,6 +179,7 @@
                         </tbody>
                     </table>
                 </div>
+                {% include 'relatorios/partials/_pagination_inad.html' %}
             </div>
         </div>
     </div>
@@ -205,6 +207,7 @@
                         </tbody>
                     </table>
                 </div>
+                {% include 'relatorios/partials/_pagination_est.html' %}
             </div>
         </div>
     </div>
@@ -233,6 +236,7 @@
                         </tbody>
                     </table>
                 </div>
+                {% include 'relatorios/partials/_pagination_aviso.html' %}
             </div>
         </div>
     </div>
@@ -262,6 +266,7 @@
                         </tbody>
                     </table>
                 </div>
+                {% include 'relatorios/partials/_pagination_perfil.html' %}
             </div>
         </div>
     </div>
@@ -336,32 +341,57 @@
                 e.preventDefault();
                 
                 const targetId = link.dataset.target; // e.g., "tbody-fat"
+                const paginationId = link.dataset.pagination; // e.g., "pagination-fat"
                 const targetEl = document.getElementById(targetId);
+                const paginationEl = document.getElementById(paginationId);
+                
                 if (!targetEl) return;
                 
                 const url = link.href;
                 
                 // Show loading state
                 targetEl.style.opacity = '0.5';
+                if (paginationEl) paginationEl.style.opacity = '0.5';
                 
                 fetch(url, {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 })
                 .then(response => response.text())
                 .then(html => {
-                    targetEl.innerHTML = html;
+                    // The response contains BOTH rows and pagination
+                    // We need to parse and insert into correct containers
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    
+                    // Get all <tr> elements (table rows) and insert into tbody
+                    const rows = doc.querySelectorAll('tr');
+                    targetEl.innerHTML = '';
+                    rows.forEach(row => targetEl.appendChild(row));
                     targetEl.style.opacity = '1';
                     
+                    // Get pagination container from response and update
+                    if (paginationEl) {
+                        const paginationDiv = doc.querySelector('.card-footer');
+                        if (paginationDiv) {
+                            paginationEl.innerHTML = paginationDiv.innerHTML;
+                        }
+                        paginationEl.style.opacity = '1';
+                    }
+                    
                     // Update active state in pagination
-                    const pagination = link.closest('.pagination');
-                    if (pagination) {
-                        pagination.querySelectorAll('.page-item').forEach(item => item.classList.remove('active'));
-                        link.closest('.page-item').classList.add('active');
+                    if (paginationEl) {
+                        paginationEl.querySelectorAll('.page-item').forEach(item => item.classList.remove('active'));
+                        // Find the clicked page in the new pagination
+                        const newLink = paginationEl.querySelector(`a[data-target="${link.dataset.target}"][href="${link.href}"]`);
+                        if (newLink) {
+                            newLink.closest('.page-item')?.classList.add('active');
+                        }
                     }
                 })
                 .catch(err => {
                     console.error('Erro ao carregar página:', err);
                     targetEl.style.opacity = '1';
+                    if (paginationEl) paginationEl.style.opacity = '1';
                 });
             });
         });

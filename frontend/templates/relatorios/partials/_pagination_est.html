@@ -1,0 +1,18 @@
+{% if est.pages > 1 %}
+<div class="card-footer border-0 bg-transparent pt-0">
+    <nav class="d-flex justify-content-between align-items-center">
+        <small class="text-muted">Mostrando {{ ((est.page-1)*10)+1 }}-{{ [est.page*10, est.total]|min }} de {{ est.total }}</small>
+        <ul class="pagination pagination-sm mb-0">
+            {% for p in range(1, est.pages + 1) %}
+            <li class="page-item {{ 'active' if p == est.page }}">
+                <a class="page-link ajax-page" 
+                   href="?q={{ q }}&section=est&page_fat={{ request.args.get('page_fat',1) }}&page_inad={{ request.args.get('page_inad',1) }}&page_est={{ p }}&page_aviso={{ request.args.get('page_aviso',1) }}&page_perfil={{ request.args.get('page_perfil',1) }}"
+                   data-target="tbody-est" data-pagination="pagination-est" data-section="est">
+                   {{ p }}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </nav>
+</div>
+{% endif %}

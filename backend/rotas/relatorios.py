@@ -33,7 +33,7 @@ def index():
     page_aviso = request.args.get("page_aviso", 1, type=int)
     page_perfil = request.args.get("page_perfil", 1, type=int)
 
-    # Se for requisição AJAX, retornar apenas o partial da seção solicitada
+    # Se for requisição AJAX, retornar o partial da seção (rows + pagination)
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         section = request.args.get('section', 'fat')
         
@@ -56,14 +56,14 @@ def index():
         }
         
         template_map = {
-            'fat': 'relatorios/partials/_table_fat.html',
-            'inad': 'relatorios/partials/_table_inad.html',
-            'est': 'relatorios/partials/_table_est.html',
-            'aviso': 'relatorios/partials/_table_aviso.html',
-            'perfil': 'relatorios/partials/_table_perfil.html',
+            'fat': 'relatorios/partials/_table_with_pagination_fat.html',
+            'inad': 'relatorios/partials/_table_with_pagination_inad.html',
+            'est': 'relatorios/partials/_table_with_pagination_est.html',
+            'aviso': 'relatorios/partials/_table_with_pagination_aviso.html',
+            'perfil': 'relatorios/partials/_table_with_pagination_perfil.html',
         }
         
-        template = template_map.get(section, 'relatorios/partials/_table_fat.html')
+        template = template_map.get(section, 'relatorios/partials/_table_with_pagination_fat.html')
         return render_template(template, **context)
 
     return render_template(

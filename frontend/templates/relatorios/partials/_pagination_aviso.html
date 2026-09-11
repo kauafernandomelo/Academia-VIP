@@ -1,0 +1,18 @@
+{% if aviso.pages > 1 %}
+<div class="card-footer border-0 bg-transparent pt-0">
+    <nav class="d-flex justify-content-between align-items-center">
+        <small class="text-muted">Mostrando {{ ((aviso.page-1)*10)+1 }}-{{ [aviso.page*10, aviso.total]|min }} de {{ aviso.total }}</small>
+        <ul class="pagination pagination-sm mb-0">
+            {% for p in range(1, aviso.pages + 1) %}
+            <li class="page-item {{ 'active' if p == aviso.page }}">
+                <a class="page-link ajax-page" 
+                   href="?q={{ q }}&section=aviso&page_fat={{ request.args.get('page_fat',1) }}&page_inad={{ request.args.get('page_inad',1) }}&page_est={{ request.args.get('page_est',1) }}&page_aviso={{ p }}&page_perfil={{ request.args.get('page_perfil',1) }}"
+                   data-target="tbody-aviso" data-pagination="pagination-aviso" data-section="aviso">
+                   {{ p }}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </nav>
+</div>
+{% endif %}

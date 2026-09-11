@@ -1,0 +1,18 @@
+{% if fat.pages > 1 %}
+<div class="card-footer border-0 bg-transparent pt-0">
+    <nav class="d-flex justify-content-between align-items-center">
+        <small class="text-muted">Mostrando {{ ((fat.page-1)*10)+1 }}-{{ [fat.page*10, fat.total]|min }} de {{ fat.total }}</small>
+        <ul class="pagination pagination-sm mb-0">
+            {% for p in range(1, fat.pages + 1) %}
+            <li class="page-item {{ 'active' if p == fat.page }}">
+                <a class="page-link ajax-page" 
+                   href="?q={{ q }}&section=fat&page_fat={{ p }}&page_inad={{ request.args.get('page_inad',1) }}&page_est={{ request.args.get('page_est',1) }}&page_aviso={{ request.args.get('page_aviso',1) }}&page_perfil={{ request.args.get('page_perfil',1) }}"
+                   data-target="tbody-fat" data-pagination="pagination-fat" data-section="fat">
+                   {{ p }}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </nav>
+</div>
+{% endif %}
