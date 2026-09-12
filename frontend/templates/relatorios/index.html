@@ -359,19 +359,18 @@
                 .then(response => response.text())
                 .then(html => {
                     // The response contains BOTH rows and pagination
-                    // We need to parse and insert into correct containers
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(html, 'text/html');
+                    // Use a temporary div - browser fixes HTML structure (wraps <tr> in table)
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = html;
                     
-                    // Get all <tr> elements (table rows) and insert into tbody
-                    const rows = doc.querySelectorAll('tr');
+                    const rows = tempDiv.querySelectorAll('tr');
                     targetEl.innerHTML = '';
                     rows.forEach(row => targetEl.appendChild(row));
                     targetEl.style.opacity = '1';
                     
                     // Get pagination container from response and update
                     if (paginationEl) {
-                        const paginationDiv = doc.querySelector('.card-footer');
+                        const paginationDiv = tempDiv.querySelector('.card-footer');
                         if (paginationDiv) {
                             paginationEl.innerHTML = paginationDiv.innerHTML;
                         }
